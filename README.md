@@ -149,6 +149,47 @@ Test cases include:
 - Verification of transpilation-induced changes
 - Validation of anomaly detection in generated circuits
 
+## Example Output
+
+Below is an example analysis result for a quantum circuit:
+
+```json
+{
+  "rule_id": "RV1",
+  "title": "Noise-induced divergence",
+  "severity": "medium",
+  "message": "Execution context alters output distribution",
+  "impact": {
+    "confidentiality": false,
+    "integrity": true,
+    "availability": true
+  },
+  "metrics": {
+    "tvd": 0.7109,
+    "fidelity": 0.2890
+  }
+}
+
+```
+
+### Interpretation
+
+The analyzer detects divergence between expected and actual circuit behavior due to compilation and execution context.
+
+This impacts:
+- Integrity (incorrect results)
+- Availability (reliability under noise)
+
+
+### Output Files
+
+Each analyzed circuit generates a report:
+
+`reports/<circuit_name>.json`
+
+Example:
+reports/adder.json
+
 ## Summary
 
 This project improves quantum software reliability by introducing security-aware static analysis.
