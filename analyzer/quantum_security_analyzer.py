@@ -282,9 +282,7 @@ def metrics(circ: QuantumCircuit) -> StructuralMetrics:
     )
 
 
-# =========================
-# RULES: R1
-# =========================
+
 
 # =========================
 # RULES: R1
@@ -314,7 +312,7 @@ def rule_measurement_misuse(circ: QuantumCircuit) -> List[Finding]:
         for qb in qubits:
             idx = circ.find_bit(qb).index
 
-            # ✅ FIX: allow R1 always (no suppression by R2)
+            #  Allow R1 always (no suppression by R2)
             if idx in measured:
                 print("R1 triggered at", i, "qubit", idx)
                 add_finding(
