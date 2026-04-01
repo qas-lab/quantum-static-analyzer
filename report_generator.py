@@ -6,14 +6,14 @@ def generate_report(report_data, output_path):
     Save ONE clean JSON report per circuit
     """
 
-    # ✅ ensure reports folder exists
+    #  Making sure reports folder exists
     os.makedirs("reports", exist_ok=True)
 
-    # ✅ WRITE CLEAN JSON (THIS FIXES YOUR ENTIRE PROBLEM)
+    #  WRITE CLEAN JSON 
     with open(output_path, "w") as f:
         json.dump(report_data, f, indent=2)
 
-    # ✅ PRINT separately (NOT inside JSON)
+    #  PRINT separately (NOT inside JSON)
     print(f"[OK] Report saved to {output_path}")
 
 
