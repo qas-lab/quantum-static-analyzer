@@ -33,7 +33,7 @@ run() {
       --noise-model light"
   fi
 
-  # ✅ RUN COMMAND (DO NOT CAPTURE OUTPUT)
+  #  RUN COMMAND (DO NOT CAPTURE OUTPUT)
   eval $CMD
 
   echo "Saved -> $REPORT_DIR/$NAME.json"
