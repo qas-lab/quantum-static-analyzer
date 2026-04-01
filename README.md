@@ -111,24 +111,24 @@ pip install -r requirements.txt
 ./run_all.sh
 ```
 
-# Run analyzer directly
+## Run analyzer directly
 
 ```
 python analyzer/quantum_security_analyzer.py
 
 ```
 
-# Run result analysis
+##  Run result analysis
 ```
 python analyze_results.py
 ```
 
-# Generate summary table
+## Generate summary table
 ```
 python make_table.py
 ```
 
-# Output
+## Output
 
 The system generates:
 
@@ -138,7 +138,7 @@ The system generates:
 
 Each finding includes detailed information about detected risks and their potential impact.
 
-# Testing
+## Testing
 
 The project follows a structured testing methodology focused on validating detection logic and analysis correctness.
 
@@ -149,7 +149,7 @@ Test cases include:
 - Verification of transpilation-induced changes
 - Validation of anomaly detection in generated circuits
 
-# Summary
+## Summary
 
 This project improves quantum software reliability by introducing security-aware static analysis.
 
