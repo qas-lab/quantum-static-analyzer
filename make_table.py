@@ -1,5 +1,6 @@
 import pandas as pd
-pd.set_option("display.max_columns", None)  # ✅ ensures all columns show
+# ensures all columns show
+pd.set_option("display.max_columns", None)  
 
 import json
 import os
@@ -50,7 +51,7 @@ for filename in os.listdir(REPORTS_DIR):
         "LLM": int(filename.startswith("llm_")),
         "failed": int(data.get("status") != "ok"),
 
-        # ✅ FIX: add missing R1
+        #  Add R1, R2, R3, R4, R5, RV1 as binary features
         "R1": int("R1" in rules),
         "R2": int("R2" in rules),
         "R3": int("R3" in rules),
@@ -72,7 +73,7 @@ for filename in os.listdir(REPORTS_DIR):
 # ===== BUILD DATAFRAME =====
 df = pd.DataFrame(rows)
 
-# ✅ FIX: include R1 in vulnerable
+#  Include all in vulnerable
 df["vulnerable"] = (
     (df["R1"] | df["R2"] | df["R3"] | df["R4"] | df["R5"] | df["RV1"]).astype(int)
 )
@@ -80,7 +81,7 @@ df["vulnerable"] = (
 # save table
 df.to_csv("results_table.csv", index=False)
 
-# ✅ FIX: force full display
+#  Forcing full display
 print(df.head().to_string())
 
 # ===== SUMMARY STATS =====
