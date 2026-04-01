@@ -1,0 +1,49 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "light"
+  },
+  "findings": [],
+  "source_metrics": {
+    "depth": 6,
+    "size": 9,
+    "swaps": 0,
+    "num_qubits": 4,
+    "num_clbits": 4,
+    "two_qubit_ops": 3,
+    "measurements": 4,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 8,
+    "size": 11,
+    "swaps": 0,
+    "num_qubits": 4,
+    "num_clbits": 4,
+    "two_qubit_ops": 3,
+    "measurements": 4,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.09765625,
+    "hellinger": 0.22379988829430233,
+    "fidelity": 0.9023358664622021,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": false,
+    "integrity": false,
+    "availability": false
+  }
+}

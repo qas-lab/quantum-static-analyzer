@@ -1,0 +1,71 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "light"
+  },
+  "findings": [
+    {
+      "rule_id": "RV1",
+      "title": "Noise-induced divergence",
+      "severity": "medium",
+      "message": "Execution context alters output distribution",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": true
+      },
+      "layer": "hardware",
+      "evidence": {
+        "occurrences": [
+          {
+            "tvd": 0.1025390625,
+            "hellinger": 0.18067035191330688,
+            "fidelity": 0.935781933423426
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 7,
+    "size": 8,
+    "swaps": 0,
+    "num_qubits": 3,
+    "num_clbits": 3,
+    "two_qubit_ops": 2,
+    "measurements": 3,
+    "resets": 1
+  },
+  "transpiled_metrics": {
+    "depth": 13,
+    "size": 14,
+    "swaps": 0,
+    "num_qubits": 3,
+    "num_clbits": 3,
+    "two_qubit_ops": 2,
+    "measurements": 3,
+    "resets": 1
+  },
+  "runtime_validation": {
+    "tvd": 0.1025390625,
+    "hellinger": 0.18067035191330688,
+    "fidelity": 0.935781933423426,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": false,
+    "integrity": true,
+    "availability": true
+  }
+}

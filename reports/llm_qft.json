@@ -1,0 +1,146 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "heavy"
+  },
+  "findings": [
+    {
+      "rule_id": "R1",
+      "title": "Measurement misuse (n=2)",
+      "severity": "high",
+      "message": "Operation applied after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "index": 11,
+            "qubit": 0,
+            "operation": "h"
+          },
+          {
+            "index": 12,
+            "qubit": 0,
+            "operation": "swap"
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "R2",
+      "title": "Qubit reuse (n=2)",
+      "severity": "high",
+      "message": "Qubit reused after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "measurement_index": 10,
+            "reuse_index": 11,
+            "qubit": 0,
+            "operation": "h"
+          },
+          {
+            "measurement_index": 10,
+            "reuse_index": 12,
+            "qubit": 0,
+            "operation": "swap"
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "R5",
+      "title": "Classical register overwrite",
+      "severity": "medium",
+      "message": "Multiple measurements write to the same classical bit",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "clbit": 0,
+            "previous_measure_index": 10,
+            "current_measure_index": 14
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "R5",
+      "title": "Over-entanglement pattern",
+      "severity": "medium",
+      "message": "Dense two-qubit connectivity may indicate anomalous or excessive entanglement",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": true
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "num_qubits": 4,
+            "two_qubit_ops": 8,
+            "unique_pairs": 6
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 9,
+    "size": 18,
+    "swaps": 2,
+    "num_qubits": 4,
+    "num_clbits": 4,
+    "two_qubit_ops": 8,
+    "measurements": 5,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 29,
+    "size": 56,
+    "swaps": 0,
+    "num_qubits": 4,
+    "num_clbits": 4,
+    "two_qubit_ops": 18,
+    "measurements": 5,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.0400390625,
+    "hellinger": 0.033428199082818966,
+    "fidelity": 0.9977663596943558,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": true,
+    "integrity": true,
+    "availability": true
+  }
+}

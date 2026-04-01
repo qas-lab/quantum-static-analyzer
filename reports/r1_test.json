@@ -1,0 +1,93 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "light"
+  },
+  "findings": [
+    {
+      "rule_id": "R1",
+      "title": "Measurement misuse",
+      "severity": "high",
+      "message": "Operation applied after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "index": 2,
+            "qubit": 0,
+            "operation": "x"
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "R2",
+      "title": "Qubit reuse",
+      "severity": "high",
+      "message": "Qubit reused after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "measurement_index": 1,
+            "reuse_index": 2,
+            "qubit": 0,
+            "operation": "x"
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 3,
+    "size": 3,
+    "swaps": 0,
+    "num_qubits": 1,
+    "num_clbits": 1,
+    "two_qubit_ops": 0,
+    "measurements": 1,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 5,
+    "size": 5,
+    "swaps": 0,
+    "num_qubits": 1,
+    "num_clbits": 1,
+    "two_qubit_ops": 0,
+    "measurements": 1,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.0126953125,
+    "hellinger": 0.008977229462688615,
+    "fidelity": 0.9998388251972012,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": true,
+    "integrity": true,
+    "availability": false
+  }
+}
