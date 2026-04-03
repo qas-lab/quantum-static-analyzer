@@ -1,0 +1,71 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "heavy"
+  },
+  "findings": [
+    {
+      "rule_id": "R5",
+      "title": "Classical register overwrite",
+      "severity": "medium",
+      "message": "Multiple measurements write to the same classical bit",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "clbit": 0,
+            "previous_measure_index": 2,
+            "current_measure_index": 3
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 4,
+    "size": 4,
+    "swaps": 0,
+    "num_qubits": 2,
+    "num_clbits": 1,
+    "two_qubit_ops": 1,
+    "measurements": 2,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 6,
+    "size": 6,
+    "swaps": 0,
+    "num_qubits": 2,
+    "num_clbits": 1,
+    "two_qubit_ops": 1,
+    "measurements": 2,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.03125,
+    "hellinger": 0.022105865279979535,
+    "fidelity": 0.9990229002381119,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": false,
+    "integrity": true,
+    "availability": false
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "light"
+  },
+  "findings": [
+    {
+      "rule_id": "R1",
+      "title": "Measurement misuse (n=2)",
+      "severity": "high",
+      "message": "Operation applied after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "index": 5,
+            "qubit": 1,
+            "operation": "h"
+          },
+          {
+            "index": 6,
+            "qubit": 1,
+            "operation": "cx"
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "R2",
+      "title": "Qubit reuse (n=2)",
+      "severity": "high",
+      "message": "Qubit reused after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "measurement_index": 4,
+            "reuse_index": 5,
+            "qubit": 1,
+            "operation": "h"
+          },
+          {
+            "measurement_index": 4,
+            "reuse_index": 6,
+            "qubit": 1,
+            "operation": "cx"
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 7,
+    "size": 9,
+    "swaps": 0,
+    "num_qubits": 3,
+    "num_clbits": 3,
+    "two_qubit_ops": 3,
+    "measurements": 3,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 11,
+    "size": 15,
+    "swaps": 0,
+    "num_qubits": 3,
+    "num_clbits": 3,
+    "two_qubit_ops": 3,
+    "measurements": 3,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.044921875,
+    "hellinger": 0.03714905623289958,
+    "fidelity": 0.9972417997865783,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": true,
+    "integrity": true,
+    "availability": false
+  }
+}

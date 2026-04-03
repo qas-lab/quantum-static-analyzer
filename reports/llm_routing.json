@@ -1,0 +1,126 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        6,
+        7
+      ]
+    ],
+    "optimization_level": 1,
+    "noise_model": "heavy"
+  },
+  "findings": [
+    {
+      "rule_id": "R3",
+      "title": "Routing / compilation overhead",
+      "severity": "medium",
+      "message": "Routing overhead detected (SWAPs or structural blow-up)",
+      "impact": {
+        "confidentiality": true,
+        "integrity": false,
+        "availability": true
+      },
+      "layer": "compilation",
+      "evidence": {
+        "occurrences": [
+          {
+            "source_depth": 9,
+            "transpiled_depth": 42,
+            "source_size": 15,
+            "transpiled_size": 80,
+            "source_swaps": 2,
+            "transpiled_swaps": 0,
+            "depth_growth": 4.666666666666667,
+            "size_growth": 5.333333333333333
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "RV1",
+      "title": "Noise-induced divergence",
+      "severity": "medium",
+      "message": "Execution context alters output distribution",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": true
+      },
+      "layer": "hardware",
+      "evidence": {
+        "occurrences": [
+          {
+            "tvd": 0.4814453125,
+            "hellinger": 0.5292852354753729,
+            "fidelity": 0.5181943013003221
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 9,
+    "size": 15,
+    "swaps": 2,
+    "num_qubits": 5,
+    "num_clbits": 5,
+    "two_qubit_ops": 8,
+    "measurements": 5,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 42,
+    "size": 80,
+    "swaps": 0,
+    "num_qubits": 8,
+    "num_clbits": 5,
+    "two_qubit_ops": 15,
+    "measurements": 5,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.4814453125,
+    "hellinger": 0.5292852354753729,
+    "fidelity": 0.5181943013003221,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": true,
+    "integrity": true,
+    "availability": true
+  }
+}

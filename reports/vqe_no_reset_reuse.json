@@ -1,0 +1,125 @@
+{
+  "status": "ok",
+  "errors": [],
+  "execution_context": {
+    "backend": null,
+    "basis_gates": [
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "coupling_map": null,
+    "optimization_level": 1,
+    "noise_model": "light"
+  },
+  "findings": [
+    {
+      "rule_id": "R1",
+      "title": "Measurement misuse (n=2)",
+      "severity": "high",
+      "message": "Operation applied after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "index": 3,
+            "qubit": 1,
+            "operation": "ry"
+          },
+          {
+            "index": 4,
+            "qubit": 1,
+            "operation": "cx"
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "R2",
+      "title": "Qubit reuse (n=2)",
+      "severity": "high",
+      "message": "Qubit reused after measurement without reset",
+      "impact": {
+        "confidentiality": true,
+        "integrity": true,
+        "availability": false
+      },
+      "layer": "circuit",
+      "evidence": {
+        "occurrences": [
+          {
+            "measurement_index": 2,
+            "reuse_index": 3,
+            "qubit": 1,
+            "operation": "ry"
+          },
+          {
+            "measurement_index": 2,
+            "reuse_index": 4,
+            "qubit": 1,
+            "operation": "cx"
+          }
+        ]
+      }
+    },
+    {
+      "rule_id": "RV1",
+      "title": "Noise-induced divergence",
+      "severity": "medium",
+      "message": "Execution context alters output distribution",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": true
+      },
+      "layer": "hardware",
+      "evidence": {
+        "occurrences": [
+          {
+            "tvd": 0.11328125,
+            "hellinger": 0.18331603739429458,
+            "fidelity": 0.9339197414056873
+          }
+        ]
+      }
+    }
+  ],
+  "source_metrics": {
+    "depth": 6,
+    "size": 7,
+    "swaps": 0,
+    "num_qubits": 3,
+    "num_clbits": 3,
+    "two_qubit_ops": 2,
+    "measurements": 3,
+    "resets": 0
+  },
+  "transpiled_metrics": {
+    "depth": 12,
+    "size": 13,
+    "swaps": 0,
+    "num_qubits": 3,
+    "num_clbits": 3,
+    "two_qubit_ops": 2,
+    "measurements": 3,
+    "resets": 0
+  },
+  "runtime_validation": {
+    "tvd": 0.11328125,
+    "hellinger": 0.18331603739429458,
+    "fidelity": 0.9339197414056873,
+    "status": "ok",
+    "error": null
+  },
+  "cia_summary": {
+    "confidentiality": true,
+    "integrity": true,
+    "availability": true
+  }
+}
