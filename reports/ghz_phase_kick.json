@@ -28,9 +28,9 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.1005859375,
-            "hellinger": 0.22883732520283265,
-            "fidelity": 0.8980092097521898
+            "tvd": 0.13671875,
+            "hellinger": 0.26628944342817373,
+            "fidelity": 0.8632081023359914
           }
         ]
       }
@@ -57,9 +57,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.1005859375,
-    "hellinger": 0.22883732520283265,
-    "fidelity": 0.8980092097521898,
+    "tvd": 0.13671875,
+    "hellinger": 0.26628944342817373,
+    "fidelity": 0.8632081023359914,
     "status": "ok",
     "error": null
   },

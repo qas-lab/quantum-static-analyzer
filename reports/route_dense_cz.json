@@ -81,11 +81,11 @@
             "source_depth": 7,
             "transpiled_depth": 57,
             "source_size": 14,
-            "transpiled_size": 85,
+            "transpiled_size": 91,
             "source_swaps": 0,
             "transpiled_swaps": 0,
             "depth_growth": 8.142857142857142,
-            "size_growth": 6.071428571428571
+            "size_growth": 6.5
           }
         ]
       }
@@ -103,7 +103,7 @@
   },
   "transpiled_metrics": {
     "depth": 57,
-    "size": 85,
+    "size": 91,
     "swaps": 0,
     "num_qubits": 8,
     "num_clbits": 4,
@@ -112,9 +112,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.0654296875,
-    "hellinger": 0.0554104934057179,
-    "fidelity": 0.99386878132304,
+    "tvd": 0.044921875,
+    "hellinger": 0.0388201886374704,
+    "fidelity": 0.9969882569785385,
     "status": "ok",
     "error": null
   },

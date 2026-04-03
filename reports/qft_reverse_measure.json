@@ -35,9 +35,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.056640625,
-    "hellinger": 0.04585698223036893,
-    "fidelity": 0.9957986963934838,
+    "tvd": 0.0361328125,
+    "hellinger": 0.029849766595937608,
+    "fidelity": 0.9982187767646004,
     "status": "ok",
     "error": null
   },

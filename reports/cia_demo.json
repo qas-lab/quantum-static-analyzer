@@ -98,6 +98,27 @@
           }
         ]
       }
+    },
+    {
+      "rule_id": "RV1",
+      "title": "Noise-induced divergence",
+      "severity": "medium",
+      "message": "Execution context alters output distribution",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": true
+      },
+      "layer": "hardware",
+      "evidence": {
+        "occurrences": [
+          {
+            "tvd": 0.1025390625,
+            "hellinger": 0.22987438177325265,
+            "fidelity": 0.8971078386275996
+          }
+        ]
+      }
     }
   ],
   "source_metrics": {
@@ -121,9 +142,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.099609375,
-    "hellinger": 0.22607708163469017,
-    "fidelity": 0.9003906249838319,
+    "tvd": 0.1025390625,
+    "hellinger": 0.22987438177325265,
+    "fidelity": 0.8971078386275996,
     "status": "ok",
     "error": null
   },

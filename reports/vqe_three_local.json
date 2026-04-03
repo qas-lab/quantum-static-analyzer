@@ -13,29 +13,7 @@
     "optimization_level": 1,
     "noise_model": "light"
   },
-  "findings": [
-    {
-      "rule_id": "RV1",
-      "title": "Noise-induced divergence",
-      "severity": "medium",
-      "message": "Execution context alters output distribution",
-      "impact": {
-        "confidentiality": false,
-        "integrity": true,
-        "availability": true
-      },
-      "layer": "hardware",
-      "evidence": {
-        "occurrences": [
-          {
-            "tvd": 0.13671875,
-            "hellinger": 0.13626044989077604,
-            "fidelity": 0.9632109097456663
-          }
-        ]
-      }
-    }
-  ],
+  "findings": [],
   "source_metrics": {
     "depth": 5,
     "size": 11,
@@ -57,15 +35,15 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.13671875,
-    "hellinger": 0.13626044989077604,
-    "fidelity": 0.9632109097456663,
+    "tvd": 0.083984375,
+    "hellinger": 0.11073891874087907,
+    "fidelity": 0.9756241675730605,
     "status": "ok",
     "error": null
   },
   "cia_summary": {
     "confidentiality": false,
-    "integrity": true,
-    "availability": true
+    "integrity": false,
+    "availability": false
   }
 }

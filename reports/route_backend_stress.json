@@ -79,13 +79,13 @@
         "occurrences": [
           {
             "source_depth": 7,
-            "transpiled_depth": 53,
+            "transpiled_depth": 40,
             "source_size": 19,
-            "transpiled_size": 111,
+            "transpiled_size": 87,
             "source_swaps": 1,
             "transpiled_swaps": 0,
-            "depth_growth": 7.571428571428571,
-            "size_growth": 5.842105263157895
+            "depth_growth": 5.714285714285714,
+            "size_growth": 4.578947368421052
           }
         ]
       }
@@ -104,9 +104,9 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.1484375,
-            "hellinger": 0.1290973425692579,
-            "fidelity": 0.9669455119675763
+            "tvd": 0.1630859375,
+            "hellinger": 0.14814694676297976,
+            "fidelity": 0.9565866578687399
           }
         ]
       }
@@ -123,8 +123,8 @@
     "resets": 0
   },
   "transpiled_metrics": {
-    "depth": 53,
-    "size": 111,
+    "depth": 40,
+    "size": 87,
     "swaps": 0,
     "num_qubits": 8,
     "num_clbits": 6,
@@ -133,9 +133,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.1484375,
-    "hellinger": 0.1290973425692579,
-    "fidelity": 0.9669455119675763,
+    "tvd": 0.1630859375,
+    "hellinger": 0.14814694676297976,
+    "fidelity": 0.9565866578687399,
     "status": "ok",
     "error": null
   },
