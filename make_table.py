@@ -105,7 +105,7 @@ for filename in os.listdir(REPORTS_DIR):
         "mitigation_priorities": " | ".join(sorted(mitigation_priorities)) if mitigation_priorities else "",
         "mitigation_count": len(mitigation_items),
         "top_mitigation": mitigation_items[0] if mitigation_items else "",
-        "mitigations": " | ".join(mitigation_items) if mitigation_items else "",
+        
 
         # ===== METRICS =====
         "fidelity": data.get("runtime_validation", {}).get("fidelity"),
