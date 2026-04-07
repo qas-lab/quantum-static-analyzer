@@ -56,6 +56,23 @@ for filename in os.listdir(REPORTS_DIR):
             if item not in mitigation_items:
                 mitigation_items.append(item)
 
+    # ===== FALLBACK TO MITIGATION SUMMARY FOR OLDER REPORTS =====
+    if not mitigation_items:
+        ms = data.get("mitigation_summary", {})
+        for level in ["high_priority", "medium_priority", "low_priority"]:
+            for item in ms.get(level, []):
+                if item not in mitigation_items:
+                    mitigation_items.append(item)
+
+    if not mitigation_priorities:
+        ms = data.get("mitigation_summary", {})
+        if ms.get("high_priority"):
+            mitigation_priorities.add("high")
+        if ms.get("medium_priority"):
+            mitigation_priorities.add("medium")
+        if ms.get("low_priority"):
+            mitigation_priorities.add("low")
+
     # ===== CATEGORY LABEL =====
     category = (
         "LLM" if filename.startswith("llm_") else
@@ -83,7 +100,7 @@ for filename in os.listdir(REPORTS_DIR):
         "R5": int("R5" in rules),
         "RV1": int("RV1" in rules),
 
-        # ===== NEW VULNERABILITY / MITIGATION COLUMNS =====
+        # ===== VULNERABILITY / MITIGATION COLUMNS =====
         "vulnerabilities": " | ".join(vulnerability_labels) if vulnerability_labels else "",
         "mitigation_priorities": " | ".join(sorted(mitigation_priorities)) if mitigation_priorities else "",
         "mitigation_count": len(mitigation_items),
