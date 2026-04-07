@@ -1,6 +1,5 @@
 import pandas as pd
-# ensures all columns show
-pd.set_option("display.max_columns", None)  
+pd.set_option("display.max_columns", None)
 
 import json
 import os
@@ -17,12 +16,12 @@ for filename in os.listdir(REPORTS_DIR):
 
     # ===== SAFE JSON LOADING =====
     try:
-        with open(path) as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
 
             try:
                 data = json.loads(content)
-            except:
+            except Exception:
                 # attempt to trim extra garbage after JSON
                 content = content.split("}\n")[0] + "}"
                 data = json.loads(content)
@@ -32,26 +31,51 @@ for filename in os.listdir(REPORTS_DIR):
         continue
 
     findings = data.get("findings", [])
-    rules = {f["rule_id"] for f in findings}
+    rules = {f.get("rule_id") for f in findings}
+
+    # ===== EXTRACT VULNERABILITIES + MITIGATIONS =====
+    vulnerability_labels = []
+    mitigation_items = []
+    mitigation_priorities = set()
+
+    for f in findings:
+        evidence = f.get("evidence", {})
+
+        vulnerability_name = evidence.get(
+            "vulnerability",
+            f.get("title", f.get("rule_id", "UNKNOWN"))
+        )
+        if vulnerability_name not in vulnerability_labels:
+            vulnerability_labels.append(vulnerability_name)
+
+        priority = f.get("mitigation_priority")
+        if priority:
+            mitigation_priorities.add(priority)
+
+        for item in f.get("mitigation", []):
+            if item not in mitigation_items:
+                mitigation_items.append(item)
+
+    # ===== CATEGORY LABEL =====
+    category = (
+        "LLM" if filename.startswith("llm_") else
+        "routing" if "route" in filename else
+        "qft" if "qft" in filename else
+        "teleport" if "teleport" in filename else
+        "vqe" if "vqe" in filename else
+        "sdk" if "sdk" in filename else
+        "safe" if "safe" in filename else
+        "other"
+    )
 
     row = {
         "circuit_name": filename.replace(".json", ""),
-
-        "category": (
-            "LLM" if filename.startswith("llm_") else
-            "routing" if "route" in filename else
-            "qft" if "qft" in filename else
-            "teleport" if "teleport" in filename else
-            "vqe" if "vqe" in filename else
-            "sdk" if "sdk" in filename else
-            "safe" if "safe" in filename else
-            "other"
-        ),
+        "category": category,
 
         "LLM": int(filename.startswith("llm_")),
         "failed": int(data.get("status") != "ok"),
 
-        #  Add R1, R2, R3, R4, R5, RV1 as binary features
+        # ===== RULE FLAGS =====
         "R1": int("R1" in rules),
         "R2": int("R2" in rules),
         "R3": int("R3" in rules),
@@ -59,6 +83,14 @@ for filename in os.listdir(REPORTS_DIR):
         "R5": int("R5" in rules),
         "RV1": int("RV1" in rules),
 
+        # ===== NEW VULNERABILITY / MITIGATION COLUMNS =====
+        "vulnerabilities": " | ".join(vulnerability_labels) if vulnerability_labels else "",
+        "mitigation_priorities": " | ".join(sorted(mitigation_priorities)) if mitigation_priorities else "",
+        "mitigation_count": len(mitigation_items),
+        "top_mitigation": mitigation_items[0] if mitigation_items else "",
+        "mitigations": " | ".join(mitigation_items) if mitigation_items else "",
+
+        # ===== METRICS =====
         "fidelity": data.get("runtime_validation", {}).get("fidelity"),
         "tvd": data.get("runtime_validation", {}).get("tvd"),
         "depth_src": data.get("source_metrics", {}).get("depth"),
@@ -73,28 +105,44 @@ for filename in os.listdir(REPORTS_DIR):
 # ===== BUILD DATAFRAME =====
 df = pd.DataFrame(rows)
 
-#  Include all in vulnerable
-df["vulnerable"] = (
-    (df["R1"] | df["R2"] | df["R3"] | df["R4"] | df["R5"] | df["RV1"]).astype(int)
-)
+# ===== VULNERABLE FLAG =====
+if not df.empty:
+    df["vulnerable"] = (
+        (df["R1"] | df["R2"] | df["R3"] | df["R4"] | df["R5"] | df["RV1"]).astype(int)
+    )
+else:
+    df["vulnerable"] = pd.Series(dtype=int)
 
-# save table
+# ===== SAVE TABLE =====
 df.to_csv("results_table.csv", index=False)
 
-#  Forcing full display
-print(df.head().to_string())
+# ===== DISPLAY =====
+if not df.empty:
+    print(df.head().to_string())
+else:
+    print("No valid report rows found.")
 
 # ===== SUMMARY STATS =====
 print("\n=== SUMMARY ===")
-print("Vulnerability rate:", df["vulnerable"].mean())
-print("R1:", df["R1"].mean())
-print("R2:", df["R2"].mean())
-print("R3:", df["R3"].mean())
-print("R4:", df["R4"].mean())
-print("R5:", df["R5"].mean())
-print("RV1:", df["RV1"].mean())
-print("Failures:", df["failed"].mean())
+if not df.empty:
+    print("Vulnerability rate:", df["vulnerable"].mean())
+    print("R1:", df["R1"].mean())
+    print("R2:", df["R2"].mean())
+    print("R3:", df["R3"].mean())
+    print("R4:", df["R4"].mean())
+    print("R5:", df["R5"].mean())
+    print("RV1:", df["RV1"].mean())
+    print("Failures:", df["failed"].mean())
+    print("Average mitigation count:", df["mitigation_count"].mean())
+else:
+    print("No data available.")
 
 print("\n=== LLM vs NON-LLM ===")
-print("LLM vulnerable:", df[df["LLM"] == 1]["vulnerable"].mean())
-print("Non-LLM vulnerable:", df[df["LLM"] == 0]["vulnerable"].mean())
+if not df.empty:
+    llm_df = df[df["LLM"] == 1]
+    non_llm_df = df[df["LLM"] == 0]
+
+    print("LLM vulnerable:", llm_df["vulnerable"].mean() if not llm_df.empty else "N/A")
+    print("Non-LLM vulnerable:", non_llm_df["vulnerable"].mean() if not non_llm_df.empty else "N/A")
+else:
+    print("No data available.")
