@@ -29,6 +29,8 @@ class Finding:
     impact: Dict[str, bool] = field(default_factory=dict)
     layer: str = "circuit"
     evidence: Dict[str, Any] = field(default_factory=dict)
+    mitigation: List[str] = field(default_factory=list)
+    mitigation_priority: str = "medium"
 
 
 @dataclass
@@ -69,6 +71,7 @@ class AnalysisReport:
     transpiled_metrics: Optional[StructuralMetrics]
     runtime_validation: RuntimeValidation
     cia_summary: Dict[str, bool]
+    mitigation_summary: Dict[str, List[str]] = field(default_factory=dict)
     status: str = "ok"
     errors: List[str] = field(default_factory=list)
 
@@ -85,6 +88,7 @@ class AnalysisReport:
                 ),
                 "runtime_validation": asdict(self.runtime_validation),
                 "cia_summary": self.cia_summary,
+                "mitigation_summary": self.mitigation_summary,
             },
             indent=2,
         )
@@ -209,6 +213,173 @@ def add_finding(
     )
 
 
+def attach_vulnerability_semantics(findings: List[Finding]) -> None:
+    for f in findings:
+        if f.rule_id == "R1":
+            f.evidence["vulnerability"] = "Measurement Misuse"
+            f.evidence["security_risk"] = "Potential information leakage due to improper measurement ordering"
+
+        elif f.rule_id == "R2":
+            f.evidence["vulnerability"] = "Qubit Reuse Without Reset"
+            f.evidence["security_risk"] = "State persistence may leak information across computation boundaries"
+
+        elif f.rule_id == "R3":
+            f.evidence["vulnerability"] = "SWAP-Based Routing Exposure"
+            f.evidence["security_risk"] = "Increased exposure to crosstalk and interference in multi-tenant environments"
+
+        elif f.rule_id == "R4":
+            f.evidence["vulnerability"] = "SDK Fragility"
+            f.evidence["security_risk"] = "Version changes may alter execution semantics and introduce inconsistencies"
+
+        elif f.rule_id == "R5":
+            f.evidence["vulnerability"] = "LLM-Generated Circuit Anomaly"
+            f.evidence["security_risk"] = "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+
+        elif f.rule_id == "RV1":
+            f.evidence["vulnerability"] = "Noise-Induced Runtime Divergence"
+            f.evidence["security_risk"] = "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+
+        elif f.rule_id == "RV0":
+            f.evidence["vulnerability"] = "Validation Execution Issue"
+            f.evidence["security_risk"] = "Runtime validation could not complete, reducing confidence in execution-level assurance"
+
+
+# =========================
+# MITIGATION
+# =========================
+
+def mitigation_for_rule(
+    rule_id: str,
+    evidence: Optional[Dict[str, Any]] = None,
+) -> Tuple[List[str], str]:
+    evidence = evidence or {}
+
+    if rule_id == "R1":
+        op = evidence.get("operation")
+        if op:
+            return (
+                [
+                    f"Remove or relocate the post-measurement operation '{op}' unless the qubit is explicitly reset or reinitialized first.",
+                    "Separate measurement phases from subsequent computation phases with clear reset boundaries.",
+                    "For mid-circuit measurement and feedback, document the intended control-flow and verify qubit lifecycle correctness.",
+                    "Add simulator and noisy-backend tests to confirm measurement ordering does not change intended behavior.",
+                ],
+                "high",
+            )
+        return (
+            [
+                "Do not apply unitary operations to a qubit after measurement unless it is explicitly reset or reinitialized.",
+                "Separate measurement phases from subsequent computation phases with clear reset boundaries.",
+                "For mid-circuit measurement and feedback, document the intended control-flow and verify qubit lifecycle correctness.",
+                "Add simulator and noisy-backend tests to confirm measurement ordering does not change intended behavior.",
+            ],
+            "high",
+        )
+
+    if rule_id == "R2":
+        return (
+            [
+                "Insert an explicit reset before reusing any measured qubit for a new logical role.",
+                "Treat qubit reuse as a lifecycle boundary and document reuse assumptions in the circuit design.",
+                "Where possible, allocate a fresh qubit instead of reusing a previously measured qubit.",
+                "Validate reuse behavior under noisy simulation because reset behavior may differ across backends.",
+            ],
+            "high",
+        )
+
+    if rule_id == "R3":
+        return (
+            [
+                "Reduce routing pressure by choosing an initial qubit layout aligned with the backend coupling map.",
+                "Minimize long-range two-qubit interactions to reduce SWAP insertion during transpilation.",
+                "Compare source and transpiled metrics and flag excessive depth or SWAP growth before execution.",
+                "Test on multiple transpilation settings or backend targets to identify compilation-sensitive circuits.",
+            ],
+            "medium",
+        )
+
+    if rule_id == "R4":
+        return (
+            [
+                "Replace deprecated or legacy Qiskit APIs with current supported interfaces.",
+                "Pin and document the Qiskit version used for analysis and execution.",
+                "Add CI checks to test the circuit under target SDK versions and fail on deprecated constructs.",
+                "Re-validate transpilation output after SDK upgrades because behavior may change across versions.",
+            ],
+            "medium",
+        )
+
+    if rule_id == "R5":
+        return (
+            [
+                "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+                "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+                "Run circuit simplification and compare the simplified circuit against the original intent.",
+                "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies.",
+            ],
+            "medium",
+        )
+
+    if rule_id == "RV1":
+        return (
+            [
+                "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+                "Reduce circuit depth and two-qubit gate count to improve resilience.",
+                "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+                "Prefer backend-aware compilation and calibration-aligned execution settings where available.",
+            ],
+            "medium",
+        )
+
+    if rule_id == "RV0":
+        return (
+            [
+                "Inspect the execution environment and validation pipeline before trusting runtime conclusions.",
+                "Log simulator/backend configuration and reproduce validation in a controlled environment.",
+            ],
+            "low",
+        )
+
+    return (
+        ["Review this finding manually and validate the circuit against the intended execution context."],
+        "low",
+    )
+
+
+def attach_mitigations(findings: List[Finding]) -> None:
+    for f in findings:
+        mitigation, priority = mitigation_for_rule(f.rule_id, f.evidence)
+        f.mitigation = mitigation
+        f.mitigation_priority = priority
+
+
+def build_mitigation_summary(findings: List[Finding]) -> Dict[str, List[str]]:
+    high: List[str] = []
+    medium: List[str] = []
+    low: List[str] = []
+
+    seen = set()
+    for f in findings:
+        for item in f.mitigation:
+            key = (f.mitigation_priority, item)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            if f.mitigation_priority == "high":
+                high.append(item)
+            elif f.mitigation_priority == "medium":
+                medium.append(item)
+            else:
+                low.append(item)
+
+    return {
+        "high_priority": high,
+        "medium_priority": medium,
+        "low_priority": low,
+    }
+
+
 # =========================
 # LOAD CIRCUIT
 # =========================
@@ -282,16 +453,12 @@ def metrics(circ: QuantumCircuit) -> StructuralMetrics:
     )
 
 
-
-
 # =========================
 # RULES: R1
 # =========================
 
 def rule_measurement_misuse(circ: QuantumCircuit) -> List[Finding]:
     findings: List[Finding] = []
-
-    #  REMOVED suppression logic (reuse_events + measured_for_reuse)
 
     measured: set[int] = set()
 
@@ -312,7 +479,6 @@ def rule_measurement_misuse(circ: QuantumCircuit) -> List[Finding]:
         for qb in qubits:
             idx = circ.find_bit(qb).index
 
-            #  Allow R1 always (no suppression by R2)
             if idx in measured:
                 print("R1 triggered at", i, "qubit", idx)
                 add_finding(
@@ -330,6 +496,7 @@ def rule_measurement_misuse(circ: QuantumCircuit) -> List[Finding]:
                 )
 
     return findings
+
 
 def rule_classical_feedback(circ: QuantumCircuit) -> List[Finding]:
     findings: List[Finding] = []
@@ -524,6 +691,7 @@ def rule_sdk_fragility(source_code: str) -> List[Finding]:
 # =========================
 
 SELF_INVERSE_GATES = {"x", "y", "z", "h", "cx", "cy", "cz", "swap"}
+
 
 def rule_redundant_gates(circ: QuantumCircuit) -> List[Finding]:
     findings: List[Finding] = []
@@ -834,10 +1002,16 @@ def analyze(path: str, args) -> AnalysisReport:
     except Exception as e:
         errors.append(str(e))
         dummy = QuantumCircuit(1, 1)
+
         initial_findings = rule_sdk_fragility(source_code) + rule_fake_api_pattern(source_code, tree)
+        initial_findings = aggregate_findings(initial_findings)
+        attach_vulnerability_semantics(initial_findings)
+        attach_mitigations(initial_findings)
+        mitigation_summary = build_mitigation_summary(initial_findings)
+
         return AnalysisReport(
             execution_context=ctx,
-            findings=aggregate_findings(initial_findings),
+            findings=initial_findings,
             source_metrics=metrics(dummy),
             transpiled_metrics=None,
             runtime_validation=RuntimeValidation(
@@ -852,6 +1026,7 @@ def analyze(path: str, args) -> AnalysisReport:
                 "integrity": any(f.impact.get("integrity", False) for f in initial_findings),
                 "availability": True,
             },
+            mitigation_summary=mitigation_summary,
             status="error",
             errors=errors,
         )
@@ -936,6 +1111,9 @@ def analyze(path: str, args) -> AnalysisReport:
         )
 
     findings = aggregate_findings(findings)
+    attach_vulnerability_semantics(findings)
+    attach_mitigations(findings)
+    mitigation_summary = build_mitigation_summary(findings)
 
     cia_summary = {
         "confidentiality": False,
@@ -954,6 +1132,7 @@ def analyze(path: str, args) -> AnalysisReport:
         transpiled_metrics=metrics(tx) if tx is not None else None,
         runtime_validation=validation,
         cia_summary=cia_summary,
+        mitigation_summary=mitigation_summary,
         status="ok" if not errors else "partial",
         errors=errors,
     )
@@ -979,12 +1158,9 @@ def main() -> None:
 
     print(report_json)
 
-    #  FIXED: everything BELOW must be inside main()
     os.makedirs("reports", exist_ok=True)
 
-    # extract circuit name from input path
     circuit_name = os.path.splitext(os.path.basename(args.input))[0]
-
     output_path = f"reports/{circuit_name}.json"
 
     with open(output_path, "w", encoding="utf-8") as fh:

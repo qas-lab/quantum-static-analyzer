@@ -11,7 +11,7 @@
     ],
     "coupling_map": null,
     "optimization_level": 1,
-    "noise_model": "heavy"
+    "noise_model": "light"
   },
   "findings": [
     {
@@ -54,29 +54,17 @@
               ]
             ]
           }
-        ]
-      }
-    },
-    {
-      "rule_id": "RV1",
-      "title": "Noise-induced divergence",
-      "severity": "medium",
-      "message": "Execution context alters output distribution",
-      "impact": {
-        "confidentiality": false,
-        "integrity": true,
-        "availability": true
+        ],
+        "vulnerability": "LLM-Generated Circuit Anomaly",
+        "security_risk": "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
       },
-      "layer": "hardware",
-      "evidence": {
-        "occurrences": [
-          {
-            "tvd": 0.203125,
-            "hellinger": 0.32864293392061084,
-            "fidelity": 0.7956529784577185
-          }
-        ]
-      }
+      "mitigation": [
+        "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+        "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+        "Run circuit simplification and compare the simplified circuit against the original intent.",
+        "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -100,9 +88,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.203125,
-    "hellinger": 0.32864293392061084,
-    "fidelity": 0.7956529784577185,
+    "tvd": 0.068359375,
+    "hellinger": 0.18664094580588955,
+    "fidelity": 0.9315437809599081,
     "status": "ok",
     "error": null
   },
@@ -110,5 +98,15 @@
     "confidentiality": false,
     "integrity": true,
     "availability": true
+  },
+  "mitigation_summary": {
+    "high_priority": [],
+    "medium_priority": [
+      "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+      "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+      "Run circuit simplification and compare the simplified circuit against the original intent.",
+      "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+    ],
+    "low_priority": []
   }
 }
