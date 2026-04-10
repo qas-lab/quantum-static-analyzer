@@ -11,7 +11,7 @@
     ],
     "coupling_map": null,
     "optimization_level": 1,
-    "noise_model": "light"
+    "noise_model": "heavy"
   },
   "findings": [
     {
@@ -71,9 +71,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.0029296875,
-    "hellinger": 0.0020716841393416514,
-    "fidelity": 0.9999914162680736,
+    "tvd": 0.0341796875,
+    "hellinger": 0.02417481761164364,
+    "fidelity": 0.9988314979357354,
     "status": "ok",
     "error": null
   },

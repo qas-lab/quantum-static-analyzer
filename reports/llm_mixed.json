@@ -32,8 +32,17 @@
             "second_index": 9,
             "operation": "cx"
           }
-        ]
-      }
+        ],
+        "vulnerability": "LLM-Generated Circuit Anomaly",
+        "security_risk": "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+      },
+      "mitigation": [
+        "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+        "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+        "Run circuit simplification and compare the simplified circuit against the original intent.",
+        "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      ],
+      "mitigation_priority": "medium"
     },
     {
       "rule_id": "R5",
@@ -53,8 +62,17 @@
             "previous_measure_index": 4,
             "current_measure_index": 12
           }
-        ]
-      }
+        ],
+        "vulnerability": "LLM-Generated Circuit Anomaly",
+        "security_risk": "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+      },
+      "mitigation": [
+        "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+        "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+        "Run circuit simplification and compare the simplified circuit against the original intent.",
+        "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      ],
+      "mitigation_priority": "medium"
     },
     {
       "rule_id": "R5",
@@ -74,8 +92,17 @@
             "two_qubit_ops": 6,
             "unique_pairs": 5
           }
-        ]
-      }
+        ],
+        "vulnerability": "LLM-Generated Circuit Anomaly",
+        "security_risk": "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+      },
+      "mitigation": [
+        "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+        "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+        "Run circuit simplification and compare the simplified circuit against the original intent.",
+        "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      ],
+      "mitigation_priority": "medium"
     },
     {
       "rule_id": "RV1",
@@ -91,12 +118,21 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.298828125,
-            "hellinger": 0.3957835194930361,
-            "fidelity": 0.7112483403195414
+            "tvd": 0.31640625,
+            "hellinger": 0.4038045499797138,
+            "fidelity": 0.7004717195631546
           }
-        ]
-      }
+        ],
+        "vulnerability": "Noise-Induced Runtime Divergence",
+        "security_risk": "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+      },
+      "mitigation": [
+        "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+        "Reduce circuit depth and two-qubit gate count to improve resilience.",
+        "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+        "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -120,9 +156,9 @@
     "resets": 1
   },
   "runtime_validation": {
-    "tvd": 0.298828125,
-    "hellinger": 0.3957835194930361,
-    "fidelity": 0.7112483403195414,
+    "tvd": 0.31640625,
+    "hellinger": 0.4038045499797138,
+    "fidelity": 0.7004717195631546,
     "status": "ok",
     "error": null
   },
@@ -130,5 +166,19 @@
     "confidentiality": false,
     "integrity": true,
     "availability": true
+  },
+  "mitigation_summary": {
+    "high_priority": [],
+    "medium_priority": [
+      "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+      "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+      "Run circuit simplification and compare the simplified circuit against the original intent.",
+      "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies.",
+      "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+      "Reduce circuit depth and two-qubit gate count to improve resilience.",
+      "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+      "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+    ],
+    "low_priority": []
   }
 }

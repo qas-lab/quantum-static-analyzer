@@ -38,5 +38,10 @@
     "confidentiality": false,
     "integrity": false,
     "availability": true
+  },
+  "mitigation_summary": {
+    "high_priority": [],
+    "medium_priority": [],
+    "low_priority": []
   }
 }

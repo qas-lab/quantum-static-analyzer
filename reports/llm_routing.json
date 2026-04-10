@@ -66,8 +66,17 @@
             "depth_growth": 4.666666666666667,
             "size_growth": 5.333333333333333
           }
-        ]
-      }
+        ],
+        "vulnerability": "SWAP-Based Routing Exposure",
+        "security_risk": "Increased exposure to crosstalk and interference in multi-tenant environments"
+      },
+      "mitigation": [
+        "Reduce routing pressure by choosing an initial qubit layout aligned with the backend coupling map.",
+        "Minimize long-range two-qubit interactions to reduce SWAP insertion during transpilation.",
+        "Compare source and transpiled metrics and flag excessive depth or SWAP growth before execution.",
+        "Test on multiple transpilation settings or backend targets to identify compilation-sensitive circuits."
+      ],
+      "mitigation_priority": "medium"
     },
     {
       "rule_id": "RV1",
@@ -83,12 +92,21 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.474609375,
-            "hellinger": 0.5248864074925286,
-            "fidelity": 0.5248919316566283
+            "tvd": 0.494140625,
+            "hellinger": 0.5383446050490228,
+            "fidelity": 0.5043628566816554
           }
-        ]
-      }
+        ],
+        "vulnerability": "Noise-Induced Runtime Divergence",
+        "security_risk": "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+      },
+      "mitigation": [
+        "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+        "Reduce circuit depth and two-qubit gate count to improve resilience.",
+        "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+        "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -112,9 +130,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.474609375,
-    "hellinger": 0.5248864074925286,
-    "fidelity": 0.5248919316566283,
+    "tvd": 0.494140625,
+    "hellinger": 0.5383446050490228,
+    "fidelity": 0.5043628566816554,
     "status": "ok",
     "error": null
   },
@@ -122,5 +140,19 @@
     "confidentiality": true,
     "integrity": true,
     "availability": true
+  },
+  "mitigation_summary": {
+    "high_priority": [],
+    "medium_priority": [
+      "Reduce routing pressure by choosing an initial qubit layout aligned with the backend coupling map.",
+      "Minimize long-range two-qubit interactions to reduce SWAP insertion during transpilation.",
+      "Compare source and transpiled metrics and flag excessive depth or SWAP growth before execution.",
+      "Test on multiple transpilation settings or backend targets to identify compilation-sensitive circuits.",
+      "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+      "Reduce circuit depth and two-qubit gate count to improve resilience.",
+      "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+      "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+    ],
+    "low_priority": []
   }
 }

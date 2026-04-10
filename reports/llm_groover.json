@@ -32,8 +32,17 @@
             "qubit": 0,
             "operation": "x"
           }
-        ]
-      }
+        ],
+        "vulnerability": "Measurement Misuse",
+        "security_risk": "Potential information leakage due to improper measurement ordering"
+      },
+      "mitigation": [
+        "Do not apply unitary operations to a qubit after measurement unless it is explicitly reset or reinitialized.",
+        "Separate measurement phases from subsequent computation phases with clear reset boundaries.",
+        "For mid-circuit measurement and feedback, document the intended control-flow and verify qubit lifecycle correctness.",
+        "Add simulator and noisy-backend tests to confirm measurement ordering does not change intended behavior."
+      ],
+      "mitigation_priority": "high"
     },
     {
       "rule_id": "R2",
@@ -54,8 +63,17 @@
             "qubit": 0,
             "operation": "x"
           }
-        ]
-      }
+        ],
+        "vulnerability": "Qubit Reuse Without Reset",
+        "security_risk": "State persistence may leak information across computation boundaries"
+      },
+      "mitigation": [
+        "Insert an explicit reset before reusing any measured qubit for a new logical role.",
+        "Treat qubit reuse as a lifecycle boundary and document reuse assumptions in the circuit design.",
+        "Where possible, allocate a fresh qubit instead of reusing a previously measured qubit.",
+        "Validate reuse behavior under noisy simulation because reset behavior may differ across backends."
+      ],
+      "mitigation_priority": "high"
     },
     {
       "rule_id": "R5",
@@ -75,8 +93,17 @@
             "previous_measure_index": 22,
             "current_measure_index": 24
           }
-        ]
-      }
+        ],
+        "vulnerability": "LLM-Generated Circuit Anomaly",
+        "security_risk": "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+      },
+      "mitigation": [
+        "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+        "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+        "Run circuit simplification and compare the simplified circuit against the original intent.",
+        "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      ],
+      "mitigation_priority": "medium"
     },
     {
       "rule_id": "RV1",
@@ -92,12 +119,21 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.7275390625,
-            "hellinger": 0.6914864725518408,
-            "fidelity": 0.2723237260170966
+            "tvd": 0.69921875,
+            "hellinger": 0.6721046904047909,
+            "fidelity": 0.3006057882908306
           }
-        ]
-      }
+        ],
+        "vulnerability": "Noise-Induced Runtime Divergence",
+        "security_risk": "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+      },
+      "mitigation": [
+        "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+        "Reduce circuit depth and two-qubit gate count to improve resilience.",
+        "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+        "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -121,9 +157,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.7275390625,
-    "hellinger": 0.6914864725518408,
-    "fidelity": 0.2723237260170966,
+    "tvd": 0.69921875,
+    "hellinger": 0.6721046904047909,
+    "fidelity": 0.3006057882908306,
     "status": "ok",
     "error": null
   },
@@ -131,5 +167,28 @@
     "confidentiality": true,
     "integrity": true,
     "availability": true
+  },
+  "mitigation_summary": {
+    "high_priority": [
+      "Do not apply unitary operations to a qubit after measurement unless it is explicitly reset or reinitialized.",
+      "Separate measurement phases from subsequent computation phases with clear reset boundaries.",
+      "For mid-circuit measurement and feedback, document the intended control-flow and verify qubit lifecycle correctness.",
+      "Add simulator and noisy-backend tests to confirm measurement ordering does not change intended behavior.",
+      "Insert an explicit reset before reusing any measured qubit for a new logical role.",
+      "Treat qubit reuse as a lifecycle boundary and document reuse assumptions in the circuit design.",
+      "Where possible, allocate a fresh qubit instead of reusing a previously measured qubit.",
+      "Validate reuse behavior under noisy simulation because reset behavior may differ across backends."
+    ],
+    "medium_priority": [
+      "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+      "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+      "Run circuit simplification and compare the simplified circuit against the original intent.",
+      "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies.",
+      "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+      "Reduce circuit depth and two-qubit gate count to improve resilience.",
+      "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+      "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+    ],
+    "low_priority": []
   }
 }

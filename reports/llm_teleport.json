@@ -28,12 +28,21 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.1533203125,
-            "hellinger": 0.15246549642096116,
-            "fidelity": 0.9540489086538216
+            "tvd": 0.193359375,
+            "hellinger": 0.18807039667376488,
+            "fidelity": 0.9305101222283599
           }
-        ]
-      }
+        ],
+        "vulnerability": "Noise-Induced Runtime Divergence",
+        "security_risk": "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+      },
+      "mitigation": [
+        "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+        "Reduce circuit depth and two-qubit gate count to improve resilience.",
+        "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+        "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -57,9 +66,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.1533203125,
-    "hellinger": 0.15246549642096116,
-    "fidelity": 0.9540489086538216,
+    "tvd": 0.193359375,
+    "hellinger": 0.18807039667376488,
+    "fidelity": 0.9305101222283599,
     "status": "ok",
     "error": null
   },
@@ -67,5 +76,15 @@
     "confidentiality": false,
     "integrity": true,
     "availability": true
+  },
+  "mitigation_summary": {
+    "high_priority": [],
+    "medium_priority": [
+      "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+      "Reduce circuit depth and two-qubit gate count to improve resilience.",
+      "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+      "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+    ],
+    "low_priority": []
   }
 }

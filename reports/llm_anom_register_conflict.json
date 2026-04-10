@@ -32,8 +32,17 @@
             "previous_measure_index": 2,
             "current_measure_index": 3
           }
-        ]
-      }
+        ],
+        "vulnerability": "LLM-Generated Circuit Anomaly",
+        "security_risk": "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+      },
+      "mitigation": [
+        "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+        "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+        "Run circuit simplification and compare the simplified circuit against the original intent.",
+        "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -57,9 +66,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.0087890625,
-    "hellinger": 0.0062157224111547655,
-    "fidelity": 0.9999227310824941,
+    "tvd": 0.02734375,
+    "hellinger": 0.019337090942093606,
+    "fidelity": 0.9992522936462687,
     "status": "ok",
     "error": null
   },
@@ -67,5 +76,15 @@
     "confidentiality": false,
     "integrity": true,
     "availability": false
+  },
+  "mitigation_summary": {
+    "high_priority": [],
+    "medium_priority": [
+      "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
+      "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
+      "Run circuit simplification and compare the simplified circuit against the original intent.",
+      "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+    ],
+    "low_priority": []
   }
 }

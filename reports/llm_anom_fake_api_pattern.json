@@ -11,7 +11,7 @@
     ],
     "coupling_map": null,
     "optimization_level": 1,
-    "noise_model": "light"
+    "noise_model": "heavy"
   },
   "findings": [
     {
@@ -65,6 +65,36 @@
         "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
       ],
       "mitigation_priority": "medium"
+    },
+    {
+      "rule_id": "RV1",
+      "title": "Noise-induced divergence",
+      "severity": "medium",
+      "message": "Execution context alters output distribution",
+      "impact": {
+        "confidentiality": false,
+        "integrity": true,
+        "availability": true
+      },
+      "layer": "hardware",
+      "evidence": {
+        "occurrences": [
+          {
+            "tvd": 0.2001953125,
+            "hellinger": 0.32515175264413243,
+            "fidelity": 0.7997301682639322
+          }
+        ],
+        "vulnerability": "Noise-Induced Runtime Divergence",
+        "security_risk": "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+      },
+      "mitigation": [
+        "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+        "Reduce circuit depth and two-qubit gate count to improve resilience.",
+        "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+        "Prefer backend-aware compilation and calibration-aligned execution settings where available."
+      ],
+      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -88,9 +118,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.068359375,
-    "hellinger": 0.18664094580588955,
-    "fidelity": 0.9315437809599081,
+    "tvd": 0.2001953125,
+    "hellinger": 0.32515175264413243,
+    "fidelity": 0.7997301682639322,
     "status": "ok",
     "error": null
   },
@@ -105,7 +135,11 @@
       "Review the circuit manually for redundant, oscillating, or low-value gate patterns.",
       "Reject non-standard or hallucinated APIs unless confirmed in official SDK documentation.",
       "Run circuit simplification and compare the simplified circuit against the original intent.",
-      "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies."
+      "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies.",
+      "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
+      "Reduce circuit depth and two-qubit gate count to improve resilience.",
+      "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
+      "Prefer backend-aware compilation and calibration-aligned execution settings where available."
     ],
     "low_priority": []
   }
