@@ -190,6 +190,26 @@ Each analyzed circuit generates a report:
 Example:
 reports/adder.json
 
+### Reproducing Aggregate Metrics
+
+After ```results_table.csv``` has been generated, you can print the aggregate structural and runtime metrics with:
+
+```
+
+python3 - <<'PY'
+import pandas as pd
+
+df = pd.read_csv("results_table.csv")
+m = df[["depth_src", "depth_trans", "tvd", "fidelity"]].mean()
+
+print("source-circuit depth =", round(m["depth_src"], 2))
+print("transpiled depth =", round(m["depth_trans"], 2))
+print("mean TVD =", round(m["tvd"], 3))
+print("mean fidelity =", round(m["fidelity"], 3))
+PY
+
+``` 
+
 ## Summary
 
 This project improves quantum software reliability by introducing security-aware static analysis.
@@ -197,3 +217,12 @@ This project improves quantum software reliability by introducing security-aware
 It enables early detection of vulnerabilities in quantum circuits, including those introduced by compilation, hybrid execution environments, and automated code generation.
 
 The tool supports safer development and evaluation of quantum programs by identifying risks before deployment.
+
+
+## Acknowledgements
+
+Parts of this project were developed with the assistance of GPT and Claude models, which were used to support code generation, refinement, and implementation.
+
+Some QASM benchmark circuits used in this work were obtained from the Qiskit Benchpress repository:
+
+https://github.com/Qiskit/benchpress/tree/main/benchpress%2Fqasm
