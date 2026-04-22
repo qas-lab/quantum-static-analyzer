@@ -208,4 +208,6 @@ __marimo__/
 reports/
 reports.pdf/ 
 generate_pdf.py/
+check_missing.py/
+check_skipped.py/
 
