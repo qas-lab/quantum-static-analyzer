@@ -194,6 +194,8 @@ reports/adder.json
 
 After ```results_table.csv``` has been generated, you can print the aggregate structural and runtime metrics with:
 
+We used a fixed random seed (`42`) for reproducibility and `4096` shots to reduce sampling variance during simulation. 
+
 ```
 
 python3 - <<'PY'
