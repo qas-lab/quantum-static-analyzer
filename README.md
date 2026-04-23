@@ -84,7 +84,7 @@ Each report includes:
 ├── analyze_results.py   # Result analysis
 ├── report_generator.py  # Report generation
 ├── make_table.py        # Summary generation
-├── run_all.sh.          # Pipeline execution script
+├── run_all.sh          # Pipeline execution script
 └── README.md
 ```
 --- 
@@ -111,11 +111,9 @@ pip install -r requirements.txt
 ./run_all.sh
 ```
 
-## Run analyzer directly
-
+## Generate summary table
 ```
-python analyzer/quantum_security_analyzer.py
-
+python make_table.py
 ```
 
 ##  Run result analysis
@@ -123,10 +121,18 @@ python analyzer/quantum_security_analyzer.py
 python analyze_results.py
 ```
 
-## Generate summary table
+
+
+## Run analyzer directly
+
 ```
-python make_table.py
+python analyzer/quantum_security_analyzer.py --input circuits/adder_n10.qasm 
+
 ```
+
+
+
+
 
 ## Output
 
@@ -188,13 +194,19 @@ Each analyzed circuit generates a report:
 `reports/<circuit_name>.json`
 
 Example:
-reports/adder.json
+reports/adder_n10.json
 
 ### Reproducing Aggregate Metrics
 
 After ```results_table.csv``` has been generated, you can print the aggregate structural and runtime metrics with:
 
-We used a fixed random seed (`42`) for reproducibility and `4096` shots to reduce sampling variance during simulation. 
+We used a fixed transpiler seed (`42`), a fixed simulator seed (`42`), and `4096` shots to improve reproducibility and reduce sampling variance during simulation.
+
+- transpiler seed = `42`
+- simulator seed = `42`
+- shots = `4096`
+
+The final experimental environment used to generate the reported results was captured in `final_results/requirements_locked.txt`.
 
 ```
 
