@@ -28,9 +28,9 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.110595703125,
-            "hellinger": 0.23857574095259382,
-            "fidelity": 0.8894029341144881
+            "tvd": 0.16796875,
+            "hellinger": 0.14670694363047737,
+            "fidelity": 0.9574173817811734
           }
         ],
         "vulnerability": "Noise-Induced Runtime Divergence",
@@ -46,29 +46,29 @@
     }
   ],
   "source_metrics": {
-    "depth": 5,
-    "size": 8,
+    "depth": 14,
+    "size": 37,
     "swaps": 0,
     "num_qubits": 4,
     "num_clbits": 4,
-    "two_qubit_ops": 3,
+    "two_qubit_ops": 7,
     "measurements": 4,
     "resets": 0
   },
   "transpiled_metrics": {
-    "depth": 7,
-    "size": 10,
+    "depth": 24,
+    "size": 57,
     "swaps": 0,
     "num_qubits": 4,
     "num_clbits": 4,
-    "two_qubit_ops": 3,
+    "two_qubit_ops": 7,
     "measurements": 4,
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.110595703125,
-    "hellinger": 0.23857574095259382,
-    "fidelity": 0.8894029341144881,
+    "tvd": 0.16796875,
+    "hellinger": 0.14670694363047737,
+    "fidelity": 0.9574173817811734,
     "status": "ok",
     "error": null
   },
@@ -88,3 +88,5 @@
     "low_priority": []
   }
 }
+
+[OK] Report saved to reports/bell_n4.json

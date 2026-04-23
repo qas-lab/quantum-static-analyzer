@@ -14,7 +14,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, ReadoutError, depolarizing_error
-
+RANDOM_SEED = 42
+SHOTS = 4096
 
 # =========================
 # DATA MODELS
@@ -480,7 +481,7 @@ def rule_measurement_misuse(circ: QuantumCircuit) -> List[Finding]:
             idx = circ.find_bit(qb).index
 
             if idx in measured:
-                print("R1 triggered at", i, "qubit", idx)
+                
                 add_finding(
                     findings,
                     "R1",
@@ -926,7 +927,6 @@ def ensure_measurements(circ: QuantumCircuit) -> QuantumCircuit:
         out.measure_all()
     return out
 
-
 def run_validation(tx: Optional[QuantumCircuit], ctx: ExecutionContext) -> RuntimeValidation:
     if tx is None:
         return RuntimeValidation(
@@ -940,19 +940,32 @@ def run_validation(tx: Optional[QuantumCircuit], ctx: ExecutionContext) -> Runti
     try:
         tx_meas = ensure_measurements(tx)
 
-        ideal_sim = AerSimulator()
-        ideal_counts = ideal_sim.run(tx_meas, shots=1024).result().get_counts()
+        ideal_sim = AerSimulator(seed_simulator=RANDOM_SEED)
+        ideal_counts = ideal_sim.run(
+            tx_meas,
+            shots=SHOTS,
+            seed_simulator=RANDOM_SEED,
+        ).result().get_counts()
 
         noise_model = build_noise(ctx.noise_model)
-        noisy_sim = AerSimulator(noise_model=noise_model)
-        noisy_counts = noisy_sim.run(tx_meas, shots=1024).result().get_counts()
+        noisy_sim = AerSimulator(
+            noise_model=noise_model,
+            seed_simulator=RANDOM_SEED,
+        )
+        noisy_counts = noisy_sim.run(
+            tx_meas,
+            shots=SHOTS,
+            seed_simulator=RANDOM_SEED,
+        ).result().get_counts()
 
         p = normalize_counts(ideal_counts)
         q = normalize_counts(noisy_counts)
         p, q = align_distributions(p, q)
 
         tvd = 0.5 * sum(abs(p[k] - q[k]) for k in p)
-        hell = math.sqrt(sum((math.sqrt(p[k]) - math.sqrt(q[k])) ** 2 for k in p)) / math.sqrt(2)
+        hell = math.sqrt(
+            sum((math.sqrt(p[k]) - math.sqrt(q[k])) ** 2 for k in p)
+        ) / math.sqrt(2)
         fid = distribution_fidelity(p, q)
 
         return RuntimeValidation(
@@ -961,6 +974,7 @@ def run_validation(tx: Optional[QuantumCircuit], ctx: ExecutionContext) -> Runti
             fidelity=fid,
             status="ok",
         )
+
     except Exception as e:
         return RuntimeValidation(
             tvd=None,
@@ -1048,6 +1062,7 @@ def analyze(path: str, args) -> AnalysisReport:
             basis_gates=ctx.basis_gates,
             coupling_map=ctx.coupling_map,
             optimization_level=ctx.optimization_level,
+            seed_transpiler=RANDOM_SEED,
         )
         findings += rule_swap_exposure(circ, tx, ctx)
     except Exception as e:

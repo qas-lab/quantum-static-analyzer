@@ -120,8 +120,8 @@
         "occurrences": [
           {
             "tvd": 0.69921875,
-            "hellinger": 0.6721046904047909,
-            "fidelity": 0.3006057882908306
+            "hellinger": 0.6722560423269308,
+            "fidelity": 0.30038271281339196
           }
         ],
         "vulnerability": "Noise-Induced Runtime Divergence",
@@ -158,8 +158,8 @@
   },
   "runtime_validation": {
     "tvd": 0.69921875,
-    "hellinger": 0.6721046904047909,
-    "fidelity": 0.3006057882908306,
+    "hellinger": 0.6722560423269308,
+    "fidelity": 0.30038271281339196,
     "status": "ok",
     "error": null
   },

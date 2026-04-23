@@ -1,0 +1,15 @@
+source-circuit depth = 15.76
+transpiled depth = 47.64
+mean TVD = 0.246
+mean fidelity = 0.779
+
+vulnerability rate = 0.851485
+R1 = 0.207921
+R2 = 0.188119
+R3 = 0.108911
+R4 = 0.039604
+R5 = 0.267327
+RV1 = 0.633663
+failures = 0.069307
+LLM vulnerable = 0.84507
+Non-LLM vulnerable = 0.866667

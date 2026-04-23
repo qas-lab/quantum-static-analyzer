@@ -2,7 +2,7 @@
 
 This project introduces a static analysis framework for detecting security vulnerabilities in quantum programs, particularly in hybrid quantum–classical environments.
 
-The tool focuses on analyzing Qiskit-based circuits to identify structural and compilation-induced risks before execution on simulators or quantum hardware.
+The tool focuses on analyzing Qiskit-based circuits to identify structural and compilation-induced risks before execution in ideal and noisy simulation environments.
 
 ---
 
@@ -121,18 +121,12 @@ python make_table.py
 python analyze_results.py
 ```
 
-
-
 ## Run analyzer directly
 
-```
+```bash
 python analyzer/quantum_security_analyzer.py --input circuits/adder_n10.qasm 
 
 ```
-
-
-
-
 
 ## Output
 
@@ -194,22 +188,22 @@ Each analyzed circuit generates a report:
 `reports/<circuit_name>.json`
 
 Example:
-reports/adder_n10.json
+
+`reports/adder_n10.json`
+
 
 ### Reproducing Aggregate Metrics
 
-After ```results_table.csv``` has been generated, you can print the aggregate structural and runtime metrics with:
+After `results_table.csv` has been generated, you can print the aggregate structural and runtime metrics with:
 
 We used a fixed transpiler seed (`42`), a fixed simulator seed (`42`), and `4096` shots to improve reproducibility and reduce sampling variance during simulation.
 
-- transpiler seed = `42`
-- simulator seed = `42`
-- shots = `4096`
 
 The final experimental environment used to generate the reported results was captured in `final_results/requirements_locked.txt`.
 
-```
 
+
+```
 python3 - <<'PY'
 import pandas as pd
 
@@ -223,6 +217,25 @@ print("mean fidelity =", round(m["fidelity"], 3))
 PY
 
 ``` 
+### Reported Aggregate Results
+
+Using the locked experimental configuration, the aggregate results are:
+
+- Source-circuit depth: `15.76`
+- Transpiled-circuit depth: `47.64`
+- Mean TVD: `0.246`
+- Mean fidelity: `0.779`
+
+### Static vs. Runtime Validation Coverage
+
+Using the locked results table:
+
+- Static only: `22 / 101` (`21.78%`)
+- Runtime only: `35 / 101` (`34.65%`)
+- Both: `29 / 101` (`28.71%`)
+- Neither: `15 / 101` (`14.85%`)
+
+These results show that runtime validation contributes substantial additional coverage beyond static rule-based detection alone.
 
 ## Summary
 
@@ -232,6 +245,13 @@ It enables early detection of vulnerabilities in quantum circuits, including tho
 
 The tool supports safer development and evaluation of quantum programs by identifying risks before deployment.
 
+## Dataset
+
+The evaluation corpus contains 101 circuits:
+- 30 benchmark circuits from QASMBench
+- 71 LLM-generated Qiskit circuits created using GPT-4 and Claude Opus 4.5
+
+The LLM-generated subset includes both issue-seeking circuits and clean control cases.
 
 ## Acknowledgements
 

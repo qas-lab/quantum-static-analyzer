@@ -28,9 +28,9 @@
       "evidence": {
         "occurrences": [
           {
-            "tvd": 0.193359375,
-            "hellinger": 0.18807039667376488,
-            "fidelity": 0.9305101222283599
+            "tvd": 0.176513671875,
+            "hellinger": 0.1686771711883107,
+            "fidelity": 0.9439055394655281
           }
         ],
         "vulnerability": "Noise-Induced Runtime Divergence",
@@ -66,9 +66,9 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.193359375,
-    "hellinger": 0.18807039667376488,
-    "fidelity": 0.9305101222283599,
+    "tvd": 0.176513671875,
+    "hellinger": 0.1686771711883107,
+    "fidelity": 0.9439055394655281,
     "status": "ok",
     "error": null
   },

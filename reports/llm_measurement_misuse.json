@@ -74,36 +74,6 @@
         "Validate reuse behavior under noisy simulation because reset behavior may differ across backends."
       ],
       "mitigation_priority": "high"
-    },
-    {
-      "rule_id": "RV1",
-      "title": "Noise-induced divergence",
-      "severity": "medium",
-      "message": "Execution context alters output distribution",
-      "impact": {
-        "confidentiality": false,
-        "integrity": true,
-        "availability": true
-      },
-      "layer": "hardware",
-      "evidence": {
-        "occurrences": [
-          {
-            "tvd": 0.103515625,
-            "hellinger": 0.23098409580794935,
-            "fidelity": 0.8961393072043893
-          }
-        ],
-        "vulnerability": "Noise-Induced Runtime Divergence",
-        "security_risk": "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
-      },
-      "mitigation": [
-        "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
-        "Reduce circuit depth and two-qubit gate count to improve resilience.",
-        "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
-        "Prefer backend-aware compilation and calibration-aligned execution settings where available."
-      ],
-      "mitigation_priority": "medium"
     }
   ],
   "source_metrics": {
@@ -127,16 +97,16 @@
     "resets": 0
   },
   "runtime_validation": {
-    "tvd": 0.103515625,
-    "hellinger": 0.23098409580794935,
-    "fidelity": 0.8961393072043893,
+    "tvd": 0.0859375,
+    "hellinger": 0.20963869835470275,
+    "fidelity": 0.9140346927471302,
     "status": "ok",
     "error": null
   },
   "cia_summary": {
     "confidentiality": true,
     "integrity": true,
-    "availability": true
+    "availability": false
   },
   "mitigation_summary": {
     "high_priority": [
@@ -149,12 +119,7 @@
       "Where possible, allocate a fresh qubit instead of reusing a previously measured qubit.",
       "Validate reuse behavior under noisy simulation because reset behavior may differ across backends."
     ],
-    "medium_priority": [
-      "Treat the circuit as execution-sensitive and test it under realistic noise conditions before deployment.",
-      "Reduce circuit depth and two-qubit gate count to improve resilience.",
-      "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
-      "Prefer backend-aware compilation and calibration-aligned execution settings where available."
-    ],
+    "medium_priority": [],
     "low_priority": []
   }
 }

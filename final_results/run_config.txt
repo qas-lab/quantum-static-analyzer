@@ -1,0 +1,4 @@
+RANDOM_SEED=42
+SHOTS=4096
+seed_transpiler=42
+seed_simulator=42
