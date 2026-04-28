@@ -1,33 +1,39 @@
-import pandas as pd
-pd.set_option("display.max_columns", None)
-
 import json
 import os
+import pandas as pd
+
+pd.set_option("display.max_columns", None)
 
 rows = []
-
 REPORTS_DIR = "reports"
+LABELS_PATH = "llm_intent_labels.csv"
+
+
+def load_json_safely(path: str):
+    """Load a JSON report, with a fallback for trailing garbage."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        try:
+            return json.loads(content)
+        except Exception:
+            # attempt to trim extra garbage after JSON
+            content = content.split("}\n")[0] + "}"
+            return json.loads(content)
+
+    except Exception as e:
+        print(f"Skipping bad file: {os.path.basename(path)} ({e})")
+        return None
+
 
 for filename in os.listdir(REPORTS_DIR):
     if not filename.endswith(".json"):
         continue
 
     path = os.path.join(REPORTS_DIR, filename)
-
-    # ===== SAFE JSON LOADING =====
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-            try:
-                data = json.loads(content)
-            except Exception:
-                # attempt to trim extra garbage after JSON
-                content = content.split("}\n")[0] + "}"
-                data = json.loads(content)
-
-    except Exception as e:
-        print(f"Skipping bad file: {filename} ({e})")
+    data = load_json_safely(path)
+    if data is None:
         continue
 
     findings = data.get("findings", [])
@@ -105,7 +111,6 @@ for filename in os.listdir(REPORTS_DIR):
         "mitigation_priorities": " | ".join(sorted(mitigation_priorities)) if mitigation_priorities else "",
         "mitigation_count": len(mitigation_items),
         "top_mitigation": mitigation_items[0] if mitigation_items else "",
-        
 
         # ===== METRICS =====
         "fidelity": data.get("runtime_validation", {}).get("fidelity"),
@@ -130,6 +135,13 @@ if not df.empty:
 else:
     df["vulnerable"] = pd.Series(dtype=int)
 
+# ===== MERGE MANUAL LLM INTENT LABELS =====
+if os.path.exists(LABELS_PATH):
+    labels_df = pd.read_csv(LABELS_PATH)
+    df = df.merge(labels_df, on="circuit_name", how="left")
+else:
+    df["intent"] = None
+
 # ===== SAVE TABLE =====
 df.to_csv("results_table.csv", index=False)
 
@@ -138,6 +150,13 @@ if not df.empty:
     print(df.head().to_string())
 else:
     print("No valid report rows found.")
+
+# ===== INTENT COUNTS =====
+print("\n=== INTENT COUNTS ===")
+if "intent" in df.columns and not df.empty:
+    print(df["intent"].value_counts(dropna=False))
+else:
+    print("No intent data available.")
 
 # ===== SUMMARY STATS =====
 print("\n=== SUMMARY ===")
@@ -154,6 +173,7 @@ if not df.empty:
 else:
     print("No data available.")
 
+# ===== LLM VS NON-LLM =====
 print("\n=== LLM vs NON-LLM ===")
 if not df.empty:
     llm_df = df[df["LLM"] == 1]
@@ -163,3 +183,28 @@ if not df.empty:
     print("Non-LLM vulnerable:", non_llm_df["vulnerable"].mean() if not non_llm_df.empty else "N/A")
 else:
     print("No data available.")
+
+# ===== BENCHMARK / ISSUE-SEEKING / CLEAN-CONTROL =====
+print("\n=== BENCHMARK / ISSUE-SEEKING / CLEAN-CONTROL ===")
+
+benchmark_df = df[df["LLM"] == 0]
+issue_df = df[df["intent"] == "issue_seeking"]
+clean_df = df[df["intent"] == "clean_control"]
+
+for name, sub in [
+    ("Benchmark", benchmark_df),
+    ("Issue-seeking", issue_df),
+    ("Clean control", clean_df),
+]:
+    if sub.empty:
+        print(f"\n{name}: no data")
+        continue
+
+    print(f"\n{name}")
+    print("Vulnerable:", sub["vulnerable"].mean())
+    print("R1:", sub["R1"].mean())
+    print("R2:", sub["R2"].mean())
+    print("R3:", sub["R3"].mean())
+    print("R4:", sub["R4"].mean())
+    print("R5:", sub["R5"].mean())
+    print("RV1:", sub["RV1"].mean())

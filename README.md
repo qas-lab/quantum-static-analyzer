@@ -1,6 +1,6 @@
 # Quantum Static Analyzer – Feature Overview
 
-This project introduces a static analysis framework for detecting security vulnerabilities in quantum programs, particularly in hybrid quantum–classical environments.
+This project introduces a static analysis framework for detecting security-relevant structural vulnerabilities and execution-risk indicators in quantum programs, particularly in hybrid quantum–classical environments.
 
 The tool focuses on analyzing Qiskit-based circuits to identify structural and compilation-induced risks before execution in ideal and noisy simulation environments.
 
@@ -64,14 +64,15 @@ This supports analysis of quantum programs generated using large language models
 
 ### 6. Security Report Generation
 
-The system produces structured reports summarizing detected vulnerabilities.
+The system produces structured reports summarizing detected findings, including structural vulnerabilities and runtime-validation signals.
 
 Each report includes:
 
-- Vulnerability type  
-- Security impact (Confidentiality, Integrity, Availability)  
-- Evidence from the circuit  
-- Suggested mitigation strategies  
+- Finding type
+- Rule identifier
+- Security impact (Confidentiality, Integrity, Availability)
+- Evidence from the circuit
+- Suggested mitigation strategies
 
 ---
 
@@ -174,7 +175,7 @@ Below is an example analysis result for a quantum circuit:
 
 ### Interpretation
 
-The analyzer detects divergence between expected and actual circuit behavior due to compilation and execution context.
+The analyzer detects execution-risk divergence between ideal and noisy simulation outcomes. For RV1, this represents a runtime validation signal rather than a direct structural vulnerability class.
 
 This impacts:
 - Integrity (incorrect results)
@@ -250,8 +251,7 @@ The tool supports safer development and evaluation of quantum programs by identi
 The evaluation corpus contains 101 circuits:
 - 30 benchmark circuits from QASMBench
 - 71 LLM-generated Qiskit circuits created using GPT-4 and Claude Opus 4.5
-
-The LLM-generated subset includes both issue-seeking circuits and clean control cases.
+- of the 71 LLM-generated circuits, 47 were issue-seeking and 24 were clean control cases, based on a manual design-intent review
 
 ## Acknowledgements
 

@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-from __future__ import annotations
+from __future__ import annotations  # Enables postponed evaluation of type annotations for forward references
 
-import argparse
-import ast
-import importlib.util
-import json
-import math
-import os
-from collections import defaultdict
-from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+import argparse  # Used for parsing command-line arguments
+import ast  # Used for safely parsing Python literals or syntax trees
+import importlib.util  # Utilities for dynamically importing modules
+import json  # Used for reading and writing JSON data
+import math  # Provides mathematical functions and constants
+import os  # Provides operating system interfaces, such as file paths and environment variables
 
-from qiskit import QuantumCircuit, transpile
-from qiskit_aer import AerSimulator
-from qiskit_aer.noise import NoiseModel, ReadoutError, depolarizing_error
-RANDOM_SEED = 42
-SHOTS = 4096
+from collections import defaultdict  # Dictionary subclass that provides default values for missing keys
+from dataclasses import asdict, dataclass, field  # Utilities for defining and converting data classes
+from typing import Any, Dict, List, Optional, Tuple  # Type hints for better code readability and checking
+
+from qiskit import QuantumCircuit, transpile  # QuantumCircuit builds circuits; transpile optimizes circuits for a backend
+from qiskit_aer import AerSimulator  # Simulator backend for running quantum circuits locally
+from qiskit_aer.noise import NoiseModel, ReadoutError, depolarizing_error  # Tools for adding noise models to simulations
+
+RANDOM_SEED = 42  # Fixed seed to make simulations reproducible
+SHOTS = 4096  # Number of times each quantum circuit is executed during simulation
 
 # =========================
 # DATA MODELS
@@ -23,75 +25,88 @@ SHOTS = 4096
 
 @dataclass
 class Finding:
-    rule_id: str
-    title: str
-    severity: str
-    message: str
-    impact: Dict[str, bool] = field(default_factory=dict)
-    layer: str = "circuit"
-    evidence: Dict[str, Any] = field(default_factory=dict)
-    mitigation: List[str] = field(default_factory=list)
-    mitigation_priority: str = "medium"
+    """Represents a single issue or recommendation found during analysis."""
+
+    rule_id: str  # Unique identifier for the rule that produced this finding
+    title: str  # Short human-readable title for the finding
+    severity: str  # Severity level, such as low, medium, high, or critical
+    message: str  # Detailed explanation of the issue
+
+    impact: Dict[str, bool] = field(default_factory=dict)  # CIA/security impact flags or other impact markers
+    layer: str = "circuit"  # Analysis layer where the finding applies, defaulting to the quantum circuit layer
+    evidence: Dict[str, Any] = field(default_factory=dict)  # Supporting data used to justify the finding
+    mitigation: List[str] = field(default_factory=list)  # Suggested remediation steps
+    mitigation_priority: str = "medium"  # Priority level for applying the mitigation
 
 
 @dataclass
 class ExecutionContext:
-    backend: Optional[str]
-    basis_gates: List[str]
-    coupling_map: Optional[List[List[int]]]
-    optimization_level: int
-    noise_model: Optional[str]
+    """Stores configuration details for the backend and transpilation process."""
+
+    backend: Optional[str]  # Name of the backend used, if any
+    basis_gates: List[str]  # Gate set supported or targeted by the backend
+    coupling_map: Optional[List[List[int]]]  # Physical qubit connectivity map, if available
+    optimization_level: int  # Qiskit transpiler optimization level
+    noise_model: Optional[str]  # Name or description of the noise model used, if any
 
 
 @dataclass
 class StructuralMetrics:
-    depth: int
-    size: int
-    swaps: int
-    num_qubits: int
-    num_clbits: int
-    two_qubit_ops: int
-    measurements: int
-    resets: int
+    """Captures structural properties of a quantum circuit."""
+
+    depth: int  # Circuit depth, or longest operation path through the circuit
+    size: int  # Total number of operations in the circuit
+    swaps: int  # Number of SWAP gates in the circuit
+    num_qubits: int  # Number of quantum bits used by the circuit
+    num_clbits: int  # Number of classical bits used by the circuit
+    two_qubit_ops: int  # Number of operations involving two qubits
+    measurements: int  # Number of measurement operations
+    resets: int  # Number of reset operations
 
 
 @dataclass
 class RuntimeValidation:
-    tvd: Optional[float]
-    hellinger: Optional[float]
-    fidelity: Optional[float]
-    status: str
-    error: Optional[str] = None
+    """Stores runtime comparison metrics between expected and observed results."""
+
+    tvd: Optional[float]  # Total variation distance, if calculated
+    hellinger: Optional[float]  # Hellinger distance, if calculated
+    fidelity: Optional[float]  # Fidelity score, if calculated
+    status: str  # Runtime validation status, such as ok, warning, or error
+    error: Optional[str] = None  # Error message if validation failed
 
 
 @dataclass
 class AnalysisReport:
-    execution_context: ExecutionContext
-    findings: List[Finding]
-    source_metrics: StructuralMetrics
-    transpiled_metrics: Optional[StructuralMetrics]
-    runtime_validation: RuntimeValidation
-    cia_summary: Dict[str, bool]
-    mitigation_summary: Dict[str, List[str]] = field(default_factory=dict)
-    status: str = "ok"
-    errors: List[str] = field(default_factory=list)
+    """Final report object containing metrics, findings, validation results, and summaries."""
+
+    execution_context: ExecutionContext  # Backend, transpilation, and noise-model configuration
+    findings: List[Finding]  # List of findings generated by the analyzer
+    source_metrics: StructuralMetrics  # Metrics from the original source circuit
+    transpiled_metrics: Optional[StructuralMetrics]  # Metrics after transpilation, if available
+    runtime_validation: RuntimeValidation  # Results from runtime simulation or validation
+    cia_summary: Dict[str, bool]  # Summary of confidentiality, integrity, and availability impact flags
+    mitigation_summary: Dict[str, List[str]] = field(default_factory=dict)  # Grouped mitigation recommendations
+    status: str = "ok"  # Overall report status
+    errors: List[str] = field(default_factory=list)  # Non-fatal errors collected during analysis
 
     def to_json(self) -> str:
+        """Serialize the analysis report into a formatted JSON string."""
+
         return json.dumps(
             {
-                "status": self.status,
-                "errors": self.errors,
-                "execution_context": asdict(self.execution_context),
-                "findings": [asdict(f) for f in self.findings],
-                "source_metrics": asdict(self.source_metrics),
+                "status": self.status,  # Overall report status
+                "errors": self.errors,  # Errors captured during analysis
+                "execution_context": asdict(self.execution_context),  # Convert execution context dataclass to dict
+                "findings": [asdict(f) for f in self.findings],  # Convert each finding dataclass to dict
+                "source_metrics": asdict(self.source_metrics),  # Convert source metrics dataclass to dict
                 "transpiled_metrics": (
                     asdict(self.transpiled_metrics) if self.transpiled_metrics else None
-                ),
-                "runtime_validation": asdict(self.runtime_validation),
-                "cia_summary": self.cia_summary,
-                "mitigation_summary": self.mitigation_summary,
+                ),  # Convert transpiled metrics if present
+                "runtime_validation": asdict(self.runtime_validation),  # Convert runtime validation dataclass to dict
+                "cia_summary": self.cia_summary,  # Include CIA impact summary
+                "mitigation_summary": self.mitigation_summary,  # Include grouped mitigation summary
             },
-            indent=2,
+            indent=2,  # Pretty-print JSON with two-space indentation
         )
 
 
@@ -100,95 +115,121 @@ class AnalysisReport:
 # =========================
 
 def parse_coupling(spec: Optional[str]) -> Optional[List[List[int]]]:
-    if not spec:
-        return None
+    """Parse a coupling-map string into a list of integer qubit pairs."""
 
-    pairs: List[List[int]] = []
-    for raw in spec.split(","):
-        raw = raw.strip()
+    if not spec:
+        return None  # Return None when no coupling specification is provided
+
+    pairs: List[List[int]] = []  # Stores parsed qubit connections as [source, target] pairs
+
+    for raw in spec.split(","):  # Split comma-separated pairs, such as "0-1,1-2"
+        raw = raw.strip()  # Remove surrounding whitespace
+
         if not raw:
-            continue
+            continue  # Ignore empty entries caused by extra commas
+
         if "-" not in raw:
-            raise ValueError(f"Invalid coupling pair: {raw!r}")
-        a, b = raw.split("-", 1)
-        pairs.append([int(a), int(b)])
-    return pairs or None
+            raise ValueError(f"Invalid coupling pair: {raw!r}")  # Require pair format like "0-1"
+
+        a, b = raw.split("-", 1)  # Split only on the first hyphen
+        pairs.append([int(a), int(b)])  # Convert pair values to integers and store them
+
+    return pairs or None  # Return parsed pairs, or None if no valid pairs were found
 
 
 def normalize_counts(counts: Dict[str, int]) -> Dict[str, float]:
-    total = sum(counts.values())
+    """Convert raw measurement counts into a probability distribution."""
+
+    total = sum(counts.values())  # Total number of observed shots/results
+
     if total <= 0:
-        return {}
-    return {k: v / total for k, v in counts.items()}
+        return {}  # Avoid division by zero when there are no counts
+
+    return {k: v / total for k, v in counts.items()}  # Normalize each count into a probability
 
 
 def align_distributions(
     p: Dict[str, float], q: Dict[str, float]
 ) -> Tuple[Dict[str, float], Dict[str, float]]:
-    keys = set(p.keys()) | set(q.keys())
+    """Align two probability distributions so they share the same outcome keys."""
+
+    keys = set(p.keys()) | set(q.keys())  # Union of all outcomes from both distributions
+
     return (
-        {k: p.get(k, 0.0) for k in keys},
-        {k: q.get(k, 0.0) for k in keys},
+        {k: p.get(k, 0.0) for k in keys},  # Fill missing outcomes in p with probability 0
+        {k: q.get(k, 0.0) for k in keys},  # Fill missing outcomes in q with probability 0
     )
 
 
 def distribution_fidelity(p: Dict[str, float], q: Dict[str, float]) -> float:
-    return sum(math.sqrt(p[k] * q[k]) for k in p) ** 2
+    """Calculate classical fidelity between two aligned probability distributions."""
+
+    return sum(math.sqrt(p[k] * q[k]) for k in p) ** 2  # Squared Bhattacharyya coefficient
 
 
 def aggregate_findings(findings: List[Finding]) -> List[Finding]:
+    """Group duplicate findings and merge their counts, impacts, and evidence."""
+
     grouped: Dict[Tuple[str, str, str, str, str], Dict[str, Any]] = defaultdict(
         lambda: {
-            "count": 0,
+            "count": 0,  # Number of duplicate findings in this group
             "impact": {
                 "confidentiality": False,
                 "integrity": False,
                 "availability": False,
-            },
-            "evidence": [],
+            },  # Combined CIA impact flags
+            "evidence": [],  # Evidence from each duplicate occurrence
         }
     )
 
     for f in findings:
-        key = (f.rule_id, f.title, f.severity, f.message, f.layer)
-        grouped[key]["count"] += 1
-        grouped[key]["evidence"].append(f.evidence)
+        key = (f.rule_id, f.title, f.severity, f.message, f.layer)  # Fields used to detect duplicates
+        grouped[key]["count"] += 1  # Increment duplicate count
+        grouped[key]["evidence"].append(f.evidence)  # Preserve occurrence-specific evidence
 
         for k in ["confidentiality", "integrity", "availability"]:
-            grouped[key]["impact"][k] |= f.impact.get(k, False)
+            grouped[key]["impact"][k] |= f.impact.get(k, False)  # Merge impact flags using logical OR
 
-    out: List[Finding] = []
+    out: List[Finding] = []  # Aggregated list of findings
+
     for (rule_id, title, severity, message, layer), data in grouped.items():
-        count = data["count"]
+        count = data["count"]  # Number of occurrences for this finding group
+
         out.append(
             Finding(
                 rule_id=rule_id,
-                title=f"{title} (n={count})" if count > 1 else title,
+                title=f"{title} (n={count})" if count > 1 else title,  # Show count when duplicated
                 severity=severity,
                 message=message,
-                impact=data["impact"],
+                impact=data["impact"],  # Combined CIA impact
                 layer=layer,
-                evidence={"occurrences": data["evidence"]},
+                evidence={"occurrences": data["evidence"]},  # Store all evidence under occurrences
             )
         )
-    return out
+
+    return out  # Return grouped findings
 
 
 def safe_read_text(path: str) -> str:
+    """Safely read a UTF-8 text file, returning an empty string on failure."""
+
     try:
         with open(path, "r", encoding="utf-8") as fh:
-            return fh.read()
+            return fh.read()  # Return full file contents
     except Exception:
-        return ""
+        return ""  # Suppress read errors and return empty content
 
 
 def safe_ast_parse(source_code: str) -> Optional[ast.AST]:
+    """Safely parse Python source code into an AST."""
+
     if not source_code.strip():
-        return None
+        return None  # Return None for empty or whitespace-only source
+
     try:
-        return ast.parse(source_code)
+        return ast.parse(source_code)  # Parse source code into Python AST
     except Exception:
-        return None
+        return None  # Return None if parsing fails
 
 
 def add_finding(
@@ -201,49 +242,66 @@ def add_finding(
     layer: str = "circuit",
     evidence: Optional[Dict[str, Any]] = None,
 ) -> None:
+    """Create a Finding object and append it to the findings list."""
+
     findings.append(
         Finding(
-            rule_id=rule_id,
-            title=title,
-            severity=severity,
-            message=message,
-            impact=impact,
-            layer=layer,
-            evidence=evidence or {},
+            rule_id=rule_id,  # Rule identifier that triggered the finding
+            title=title,  # Human-readable finding title
+            severity=severity,  # Severity level for the issue
+            message=message,  # Detailed finding message
+            impact=impact,  # CIA/security impact flags
+            layer=layer,  # Layer where the issue was detected
+            evidence=evidence or {},  # Attach evidence, or use an empty dict if none is provided
         )
     )
 
 
 def attach_vulnerability_semantics(findings: List[Finding]) -> None:
+    """Attach vulnerability names and security-risk descriptions based on rule IDs."""
+
     for f in findings:
         if f.rule_id == "R1":
-            f.evidence["vulnerability"] = "Measurement Misuse"
-            f.evidence["security_risk"] = "Potential information leakage due to improper measurement ordering"
+            f.evidence["vulnerability"] = "Measurement Misuse"  # Classification for rule R1
+            f.evidence["security_risk"] = (
+                "Potential information leakage due to improper measurement ordering"
+            )
 
         elif f.rule_id == "R2":
-            f.evidence["vulnerability"] = "Qubit Reuse Without Reset"
-            f.evidence["security_risk"] = "State persistence may leak information across computation boundaries"
+            f.evidence["vulnerability"] = "Qubit Reuse Without Reset"  # Classification for rule R2
+            f.evidence["security_risk"] = (
+                "State persistence may leak information across computation boundaries"
+            )
 
         elif f.rule_id == "R3":
-            f.evidence["vulnerability"] = "SWAP-Based Routing Exposure"
-            f.evidence["security_risk"] = "Increased exposure to crosstalk and interference in multi-tenant environments"
+            f.evidence["vulnerability"] = "SWAP-Based Routing Exposure"  # Classification for rule R3
+            f.evidence["security_risk"] = (
+                "Increased exposure to crosstalk and interference in multi-tenant environments"
+            )
 
         elif f.rule_id == "R4":
-            f.evidence["vulnerability"] = "SDK Fragility"
-            f.evidence["security_risk"] = "Version changes may alter execution semantics and introduce inconsistencies"
+            f.evidence["vulnerability"] = "SDK Fragility"  # Classification for rule R4
+            f.evidence["security_risk"] = (
+                "Version changes may alter execution semantics and introduce inconsistencies"
+            )
 
         elif f.rule_id == "R5":
-            f.evidence["vulnerability"] = "LLM-Generated Circuit Anomaly"
-            f.evidence["security_risk"] = "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+            f.evidence["vulnerability"] = "LLM-Generated Circuit Anomaly"  # Classification for rule R5
+            f.evidence["security_risk"] = (
+                "Hallucinated or inefficient structures may introduce incorrect or insecure behavior"
+            )
 
         elif f.rule_id == "RV1":
-            f.evidence["vulnerability"] = "Noise-Induced Runtime Divergence"
-            f.evidence["security_risk"] = "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+            f.evidence["vulnerability"] = "Noise-Induced Runtime Divergence"  # Classification for runtime divergence
+            f.evidence["security_risk"] = (
+                "Execution under noisy conditions deviates from ideal behavior and may affect integrity or availability"
+            )
 
         elif f.rule_id == "RV0":
-            f.evidence["vulnerability"] = "Validation Execution Issue"
-            f.evidence["security_risk"] = "Runtime validation could not complete, reducing confidence in execution-level assurance"
-
+            f.evidence["vulnerability"] = "Validation Execution Issue"  # Classification for validation failure
+            f.evidence["security_risk"] = (
+                "Runtime validation could not complete, reducing confidence in execution-level assurance"
+            )
 
 # =========================
 # MITIGATION
@@ -253,10 +311,13 @@ def mitigation_for_rule(
     rule_id: str,
     evidence: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[str], str]:
-    evidence = evidence or {}
+    """Return mitigation recommendations and priority level for a given rule ID."""
+
+    evidence = evidence or {}  # Use an empty dictionary when no evidence is provided
 
     if rule_id == "R1":
-        op = evidence.get("operation")
+        op = evidence.get("operation")  # Operation found after measurement, if available
+
         if op:
             return (
                 [
@@ -265,8 +326,9 @@ def mitigation_for_rule(
                     "For mid-circuit measurement and feedback, document the intended control-flow and verify qubit lifecycle correctness.",
                     "Add simulator and noisy-backend tests to confirm measurement ordering does not change intended behavior.",
                 ],
-                "high",
+                "high",  # R1 is high priority because post-measurement operations can alter intended behavior
             )
+
         return (
             [
                 "Do not apply unitary operations to a qubit after measurement unless it is explicitly reset or reinitialized.",
@@ -274,7 +336,7 @@ def mitigation_for_rule(
                 "For mid-circuit measurement and feedback, document the intended control-flow and verify qubit lifecycle correctness.",
                 "Add simulator and noisy-backend tests to confirm measurement ordering does not change intended behavior.",
             ],
-            "high",
+            "high",  # Default R1 mitigation priority
         )
 
     if rule_id == "R2":
@@ -285,7 +347,7 @@ def mitigation_for_rule(
                 "Where possible, allocate a fresh qubit instead of reusing a previously measured qubit.",
                 "Validate reuse behavior under noisy simulation because reset behavior may differ across backends.",
             ],
-            "high",
+            "high",  # R2 is high priority because qubit state may persist across reuse boundaries
         )
 
     if rule_id == "R3":
@@ -296,7 +358,7 @@ def mitigation_for_rule(
                 "Compare source and transpiled metrics and flag excessive depth or SWAP growth before execution.",
                 "Test on multiple transpilation settings or backend targets to identify compilation-sensitive circuits.",
             ],
-            "medium",
+            "medium",  # R3 is medium priority because routing overhead may increase exposure and instability
         )
 
     if rule_id == "R4":
@@ -307,7 +369,7 @@ def mitigation_for_rule(
                 "Add CI checks to test the circuit under target SDK versions and fail on deprecated constructs.",
                 "Re-validate transpilation output after SDK upgrades because behavior may change across versions.",
             ],
-            "medium",
+            "medium",  # R4 is medium priority because SDK changes can affect execution semantics
         )
 
     if rule_id == "R5":
@@ -318,7 +380,7 @@ def mitigation_for_rule(
                 "Run circuit simplification and compare the simplified circuit against the original intent.",
                 "Use benchmark prompts, retrieval grounding, or template-based generation to reduce LLM anomalies.",
             ],
-            "medium",
+            "medium",  # R5 is medium priority because generated circuits may contain inefficient or invalid structures
         )
 
     if rule_id == "RV1":
@@ -329,7 +391,7 @@ def mitigation_for_rule(
                 "Compare ideal and noisy distributions across multiple seeds or runs before accepting results.",
                 "Prefer backend-aware compilation and calibration-aligned execution settings where available.",
             ],
-            "medium",
+            "medium",  # Runtime divergence requires investigation but may depend on workload and backend
         )
 
     if rule_id == "RV0":
@@ -338,119 +400,135 @@ def mitigation_for_rule(
                 "Inspect the execution environment and validation pipeline before trusting runtime conclusions.",
                 "Log simulator/backend configuration and reproduce validation in a controlled environment.",
             ],
-            "low",
+            "low",  # RV0 is low priority because it indicates validation uncertainty rather than a direct circuit flaw
         )
 
     return (
         ["Review this finding manually and validate the circuit against the intended execution context."],
-        "low",
+        "low",  # Unknown rules default to low priority manual review
     )
 
 
 def attach_mitigations(findings: List[Finding]) -> None:
+    """Attach mitigation recommendations and priorities to each finding."""
+
     for f in findings:
-        mitigation, priority = mitigation_for_rule(f.rule_id, f.evidence)
-        f.mitigation = mitigation
-        f.mitigation_priority = priority
+        mitigation, priority = mitigation_for_rule(f.rule_id, f.evidence)  # Look up mitigation guidance
+        f.mitigation = mitigation  # Store mitigation recommendations on the finding
+        f.mitigation_priority = priority  # Store mitigation priority on the finding
 
 
 def build_mitigation_summary(findings: List[Finding]) -> Dict[str, List[str]]:
-    high: List[str] = []
-    medium: List[str] = []
-    low: List[str] = []
+    """Build a de-duplicated mitigation summary grouped by priority."""
 
-    seen = set()
+    high: List[str] = []  # High-priority mitigation items
+    medium: List[str] = []  # Medium-priority mitigation items
+    low: List[str] = []  # Low-priority mitigation items
+
+    seen = set()  # Tracks mitigation items already added to avoid duplicates
+
     for f in findings:
         for item in f.mitigation:
-            key = (f.mitigation_priority, item)
+            key = (f.mitigation_priority, item)  # Uniqueness key includes both priority and text
+
             if key in seen:
-                continue
-            seen.add(key)
+                continue  # Skip duplicate mitigation item
+
+            seen.add(key)  # Mark mitigation item as already included
 
             if f.mitigation_priority == "high":
-                high.append(item)
+                high.append(item)  # Add high-priority mitigation
             elif f.mitigation_priority == "medium":
-                medium.append(item)
+                medium.append(item)  # Add medium-priority mitigation
             else:
-                low.append(item)
+                low.append(item)  # Add low-priority mitigation
 
     return {
-        "high_priority": high,
-        "medium_priority": medium,
-        "low_priority": low,
+        "high_priority": high,  # Consolidated high-priority recommendations
+        "medium_priority": medium,  # Consolidated medium-priority recommendations
+        "low_priority": low,  # Consolidated low-priority recommendations
     }
-
 
 # =========================
 # LOAD CIRCUIT
 # =========================
 
 def load_circuit(path: str) -> Tuple[QuantumCircuit, str]:
+    """Load a quantum circuit from a QASM or Python file."""
+
     if path.endswith(".qasm"):
         try:
-            return QuantumCircuit.from_qasm_file(path), ""
+            return QuantumCircuit.from_qasm_file(path), ""  # Load circuit directly from QASM; no Python source is returned
         except Exception as e:
-            raise ValueError(f"Failed to load QASM file {path}: {e}") from e
+            raise ValueError(f"Failed to load QASM file {path}: {e}") from e  # Add context to QASM loading errors
 
     if path.endswith(".py"):
-        source_code = safe_read_text(path)
+        source_code = safe_read_text(path)  # Read the Python source for later AST/static analysis
 
-        spec = importlib.util.spec_from_file_location("loaded_circuit_module", path)
+        spec = importlib.util.spec_from_file_location(
+            "loaded_circuit_module", path
+        )  # Create an import specification for the Python file
+
         if spec is None or spec.loader is None:
-            raise ValueError(f"Could not create import spec for {path}")
+            raise ValueError(f"Could not create import spec for {path}")  # Fail if Python cannot create a loader
 
-        mod = importlib.util.module_from_spec(spec)
+        mod = importlib.util.module_from_spec(spec)  # Create a temporary module object from the import spec
+
         try:
-            spec.loader.exec_module(mod)
+            spec.loader.exec_module(mod)  # Execute the Python file so its variables/functions become available
         except Exception as e:
-            raise ValueError(f"Failed to import Python circuit file {path}: {e}") from e
+            raise ValueError(f"Failed to import Python circuit file {path}: {e}") from e  # Wrap import-time errors
 
         try:
             if hasattr(mod, "build_circuit"):
-                circ = mod.build_circuit()
+                circ = mod.build_circuit()  # Prefer a build_circuit() factory function when available
             elif hasattr(mod, "qc"):
-                circ = mod.qc
+                circ = mod.qc  # Otherwise, use a module-level variable named qc
             else:
-                raise ValueError("Python file must define build_circuit() or qc")
+                raise ValueError("Python file must define build_circuit() or qc")  # Require one supported circuit entry point
         except Exception as e:
-            raise ValueError(f"Failed while building circuit from {path}: {e}") from e
+            raise ValueError(f"Failed while building circuit from {path}: {e}") from e  # Wrap circuit-construction errors
 
         if not isinstance(circ, QuantumCircuit):
-            raise ValueError(f"Loaded object from {path} is not a QuantumCircuit")
+            raise ValueError(f"Loaded object from {path} is not a QuantumCircuit")  # Validate the loaded object type
 
-        return circ, source_code
+        return circ, source_code  # Return the loaded circuit and its Python source code
 
-    raise ValueError("Unsupported file type; expected .py or .qasm")
-
+    raise ValueError("Unsupported file type; expected .py or .qasm")  # Reject unsupported file extensions
 
 # =========================
 # METRICS
 # =========================
 
 def metrics(circ: QuantumCircuit) -> StructuralMetrics:
-    counts = circ.count_ops()
-    two_qubit_ops = 0
-    measurements = 0
-    resets = 0
+    """Calculate structural metrics for a quantum circuit."""
+
+    counts = circ.count_ops()  # Count operations by gate/instruction name
+
+    two_qubit_ops = 0  # Number of operations that act on exactly two qubits
+    measurements = 0  # Number of measurement operations in the circuit
+    resets = 0  # Number of reset operations in the circuit
 
     for instr in circ.data:
-        op = instr.operation
+        op = instr.operation  # Extract the operation/instruction object from the circuit instruction
+
         if op.num_qubits == 2:
-            two_qubit_ops += 1
+            two_qubit_ops += 1  # Count gates that operate on exactly two qubits
+
         if op.name == "measure":
-            measurements += 1
+            measurements += 1  # Count measurement instructions
         elif op.name == "reset":
-            resets += 1
+            resets += 1  # Count reset instructions
 
     return StructuralMetrics(
-        depth=int(circ.depth() or 0),
-        size=int(circ.size() or 0),
-        swaps=int(counts.get("swap", 0)),
-        num_qubits=circ.num_qubits,
-        num_clbits=circ.num_clbits,
-        two_qubit_ops=two_qubit_ops,
-        measurements=measurements,
-        resets=resets,
+        depth=int(circ.depth() or 0),  # Circuit depth, converted safely to an integer
+        size=int(circ.size() or 0),  # Total number of operations in the circuit
+        swaps=int(counts.get("swap", 0)),  # Number of SWAP gates, defaulting to 0 if absent
+        num_qubits=circ.num_qubits,  # Number of quantum bits in the circuit
+        num_clbits=circ.num_clbits,  # Number of classical bits in the circuit
+        two_qubit_ops=two_qubit_ops,  # Total counted two-qubit operations
+        measurements=measurements,  # Total counted measurements
+        resets=resets,  # Total counted reset operations
     )
 
 
@@ -459,68 +537,80 @@ def metrics(circ: QuantumCircuit) -> StructuralMetrics:
 # =========================
 
 def rule_measurement_misuse(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect operations applied to measured qubits before an explicit reset."""
 
-    measured: set[int] = set()
+    findings: List[Finding] = []  # Stores all measurement-misuse findings detected in the circuit
+
+    measured: set[int] = set()  # Tracks qubit indexes that have been measured but not reset
 
     for i, instr in enumerate(circ.data):
-        inst = instr.operation
-        qubits = instr.qubits
+        inst = instr.operation  # Current circuit operation
+        qubits = instr.qubits  # Qubits acted on by the current operation
 
         if inst.name == "measure":
             for qb in qubits:
-                measured.add(circ.find_bit(qb).index)
-            continue
+                measured.add(circ.find_bit(qb).index)  # Mark each measured qubit as no longer safe for unitary use
+            continue  # Move to the next instruction after recording measurement state
 
         if inst.name == "reset":
             for qb in qubits:
-                measured.discard(circ.find_bit(qb).index)
-            continue
+                measured.discard(circ.find_bit(qb).index)  # Reset clears the measured-state warning for that qubit
+            continue  # Move to the next instruction after handling reset
 
         for qb in qubits:
-            idx = circ.find_bit(qb).index
+            idx = circ.find_bit(qb).index  # Convert Qiskit qubit object into its integer index
 
             if idx in measured:
-                
                 add_finding(
                     findings,
-                    "R1",
+                    "R1",  # Rule ID for measurement misuse
                     "Measurement misuse",
-                    "high",
+                    "high",  # High severity because post-measurement operations can alter correctness/security assumptions
                     "Operation applied after measurement without reset",
                     {
-                        "confidentiality": True,
-                        "integrity": True,
-                        "availability": False,
+                        "confidentiality": True,  # Measured state may leak information
+                        "integrity": True,  # Later operations may not behave as intended
+                        "availability": False,  # This issue does not directly imply availability loss
                     },
-                    evidence={"index": i, "qubit": idx, "operation": inst.name},
+                    evidence={
+                        "index": i,  # Instruction index where the issue was found
+                        "qubit": idx,  # Affected qubit index
+                        "operation": inst.name,  # Operation applied after measurement
+                    },
                 )
 
-    return findings
+    return findings  # Return all detected measurement-misuse findings
 
 
 def rule_classical_feedback(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect conditional operations that may indicate classical-feedback control flow."""
+
+    findings: List[Finding] = []  # Stores all classical-feedback findings detected in the circuit
 
     for i, instr in enumerate(circ.data):
-        op = instr.operation
-        condition = getattr(op, "condition", None)
+        op = instr.operation  # Current circuit operation
+        condition = getattr(op, "condition", None)  # Qiskit conditional metadata, if present
+
         if condition is not None:
             add_finding(
                 findings,
-                "R1",
+                "R1",  # Reuses R1 because feedback depends on correct measurement ordering
                 "Classical feedback pattern",
-                "medium",
+                "medium",  # Medium severity because feedback can be valid but requires careful review
                 "Conditional operation detected; verify measurement ordering and reinitialization",
                 {
-                    "confidentiality": True,
-                    "integrity": True,
-                    "availability": False,
+                    "confidentiality": True,  # Feedback may depend on measured information
+                    "integrity": True,  # Incorrect ordering can affect computation correctness
+                    "availability": False,  # Conditional feedback does not directly imply availability impact
                 },
-                evidence={"index": i, "operation": op.name, "condition": str(condition)},
+                evidence={
+                    "index": i,  # Instruction index where the conditional operation appears
+                    "operation": op.name,  # Name of the conditional operation
+                    "condition": str(condition),  # String form of the classical condition
+                },
             )
 
-    return findings
+    return findings  # Return all detected classical-feedback findings
 
 
 # =========================
@@ -528,46 +618,51 @@ def rule_classical_feedback(circ: QuantumCircuit) -> List[Finding]:
 # =========================
 
 def rule_qubit_reuse(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
-    measured: Dict[int, int] = {}
+    """Detect qubits that are reused after measurement without an explicit reset."""
+
+    findings: List[Finding] = []  # Stores all qubit-reuse findings detected in the circuit
+    measured: Dict[int, int] = {}  # Maps measured qubit indexes to the instruction index where measurement occurred
 
     for i, instr in enumerate(circ.data):
-        inst = instr.operation
-        qubits = instr.qubits
+        inst = instr.operation  # Current circuit operation
+        qubits = instr.qubits  # Qubits acted on by the current operation
 
         if inst.name == "measure":
             for qb in qubits:
-                measured[circ.find_bit(qb).index] = i
-            continue
+                measured[circ.find_bit(qb).index] = i  # Record the instruction index where this qubit was measured
+            continue  # Move to the next instruction after tracking measured qubits
 
         if inst.name == "reset":
             for qb in qubits:
-                measured.pop(circ.find_bit(qb).index, None)
-            continue
+                measured.pop(
+                    circ.find_bit(qb).index, None
+                )  # Reset clears the measured-state tracking for that qubit
+            continue  # Move to the next instruction after handling reset
 
         for qb in qubits:
-            idx = circ.find_bit(qb).index
+            idx = circ.find_bit(qb).index  # Convert Qiskit qubit object into its integer index
+
             if idx in measured:
                 add_finding(
                     findings,
-                    "R2",
+                    "R2",  # Rule ID for qubit reuse without reset
                     "Qubit reuse",
-                    "high",
+                    "high",  # High severity because reuse may carry state across logical boundaries
                     "Qubit reused after measurement without reset",
                     {
-                        "confidentiality": True,
-                        "integrity": True,
-                        "availability": False,
+                        "confidentiality": True,  # Prior measured state may leak into later computation
+                        "integrity": True,  # Reuse without reset can affect computation correctness
+                        "availability": False,  # This finding does not directly indicate availability loss
                     },
                     evidence={
-                        "measurement_index": measured[idx],
-                        "reuse_index": i,
-                        "qubit": idx,
-                        "operation": inst.name,
+                        "measurement_index": measured[idx],  # Instruction index of the original measurement
+                        "reuse_index": i,  # Instruction index where the qubit was reused
+                        "qubit": idx,  # Affected qubit index
+                        "operation": inst.name,  # Operation applied during reuse
                     },
                 )
 
-    return findings
+    return findings  # Return all detected qubit-reuse findings
 
 
 # =========================
@@ -577,94 +672,98 @@ def rule_qubit_reuse(circ: QuantumCircuit) -> List[Finding]:
 def rule_swap_exposure(
     src: QuantumCircuit, tx: QuantumCircuit, ctx: ExecutionContext
 ) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect routing or compilation overhead introduced during transpilation."""
 
-    src_m = metrics(src)
-    tx_m = metrics(tx)
+    findings: List[Finding] = []  # Stores routing/compilation findings
 
-    depth_growth = tx_m.depth / max(src_m.depth, 1)
-    size_growth = tx_m.size / max(src_m.size, 1)
+    src_m = metrics(src)  # Calculate metrics for the original source circuit
+    tx_m = metrics(tx)  # Calculate metrics for the transpiled circuit
+
+    depth_growth = tx_m.depth / max(src_m.depth, 1)  # Ratio of transpiled depth to source depth
+    size_growth = tx_m.size / max(src_m.size, 1)  # Ratio of transpiled size to source size
 
     if ctx.coupling_map is not None and (
-        tx_m.swaps > src_m.swaps or
-        depth_growth >= 1.5 or
-        size_growth >= 2.0
+        tx_m.swaps > src_m.swaps  # SWAP count increased after transpilation
+        or depth_growth >= 1.5  # Circuit depth grew by at least 50%
+        or size_growth >= 2.0  # Circuit size doubled or more
     ):
         add_finding(
             findings,
-            "R3",
+            "R3",  # Rule ID for routing or compilation overhead
             "Routing / compilation overhead",
-            "medium",
+            "medium",  # Medium severity because routing overhead can increase exposure and execution fragility
             "Routing overhead detected (SWAPs or structural blow-up)",
             {
-                "confidentiality": True,
-                "integrity": False,
-                "availability": True,
+                "confidentiality": True,  # Extra routing can increase exposure in shared or noisy environments
+                "integrity": False,  # This rule focuses on exposure and overhead rather than direct logical corruption
+                "availability": True,  # Larger circuits may be more costly or less reliable to execute
             },
-            layer="compilation",
+            layer="compilation",  # Finding applies to the compilation/transpilation layer
             evidence={
-                "source_depth": src_m.depth,
-                "transpiled_depth": tx_m.depth,
-                "source_size": src_m.size,
-                "transpiled_size": tx_m.size,
-                "source_swaps": src_m.swaps,
-                "transpiled_swaps": tx_m.swaps,
-                "depth_growth": depth_growth,
-                "size_growth": size_growth,
+                "source_depth": src_m.depth,  # Original circuit depth
+                "transpiled_depth": tx_m.depth,  # Transpiled circuit depth
+                "source_size": src_m.size,  # Original circuit operation count
+                "transpiled_size": tx_m.size,  # Transpiled circuit operation count
+                "source_swaps": src_m.swaps,  # Original SWAP count
+                "transpiled_swaps": tx_m.swaps,  # Transpiled SWAP count
+                "depth_growth": depth_growth,  # Depth growth ratio
+                "size_growth": size_growth,  # Size growth ratio
             },
         )
 
-    return findings
-
+    return findings  # Return all detected routing/compilation findings
 
 # =========================
 # RULES: R4
 # =========================
 
 def rule_sdk_fragility(source_code: str) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect fragile, deprecated, or version-sensitive Qiskit SDK usage patterns."""
+
+    findings: List[Finding] = []  # Stores SDK-fragility findings
+
     if not source_code:
-        return findings
+        return findings  # Return no findings when there is no source code to analyze
 
     patterns = [
         (
-            "execute(",
+            "execute(",  # Legacy Qiskit execution helper
             "SDK fragility",
             "Use of legacy execute() API",
             {"confidentiality": False, "integrity": True, "availability": True},
         ),
         (
-            "qiskit.opflow",
+            "qiskit.opflow",  # Deprecated Qiskit operator-flow module
             "Deprecated module usage",
             "Use of deprecated qiskit.opflow module",
             {"confidentiality": False, "integrity": False, "availability": True},
         ),
         (
-            "from qiskit import Aer",
+            "from qiskit import Aer",  # Older Aer import style
             "Legacy Aer import",
             "Legacy Aer import style detected",
             {"confidentiality": False, "integrity": False, "availability": True},
         ),
         (
-            "assemble(",
+            "assemble(",  # Legacy Qobj-era assembly workflow
             "Legacy Qobj workflow",
             "Use of assemble()/qobj-era execution flow",
             {"confidentiality": False, "integrity": True, "availability": True},
         ),
         (
-            "qiskit.providers.ibmq",
+            "qiskit.providers.ibmq",  # Legacy IBMQ provider namespace
             "Legacy IBMQ provider",
             "Legacy qiskit.providers.ibmq import detected",
             {"confidentiality": False, "integrity": False, "availability": True},
         ),
         (
-            "IBMQ.load_account(",
+            "IBMQ.load_account(",  # Legacy IBMQ authentication/account-loading pattern
             "Legacy IBMQ account flow",
             "Legacy IBMQ account-loading pattern detected",
             {"confidentiality": False, "integrity": False, "availability": True},
         ),
         (
-            "provider.get_backend(",
+            "provider.get_backend(",  # Direct backend binding that may be sensitive to provider/version changes
             "Backend binding fragility",
             "Version-sensitive direct backend selection pattern detected",
             {"confidentiality": False, "integrity": True, "availability": True},
@@ -675,178 +774,201 @@ def rule_sdk_fragility(source_code: str) -> List[Finding]:
         if token in source_code:
             add_finding(
                 findings,
-                "R4",
-                title,
-                "medium",
-                message,
-                impact,
-                layer="hybrid",
-                evidence={"token": token},
+                "R4",  # Rule ID for SDK/API fragility
+                title,  # Specific SDK-fragility finding title
+                "medium",  # Medium severity because SDK changes can affect correctness or availability
+                message,  # Explanation of the detected fragile pattern
+                impact,  # CIA impact flags associated with this pattern
+                layer="hybrid",  # Applies to the hybrid/classical SDK layer
+                evidence={"token": token},  # Store the exact token that triggered the finding
             )
 
-    return findings
+    return findings  # Return all detected SDK-fragility findings
 
 
 # =========================
 # RULES: R5
 # =========================
 
-SELF_INVERSE_GATES = {"x", "y", "z", "h", "cx", "cy", "cz", "swap"}
+SELF_INVERSE_GATES = {"x", "y", "z", "h", "cx", "cy", "cz", "swap"}  # Gates that cancel when applied twice in a row
 
 
 def rule_redundant_gates(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect adjacent self-inverse gates that cancel each other logically."""
+
+    findings: List[Finding] = []  # Stores redundant-gate findings
 
     for i in range(len(circ.data) - 1):
-        a = circ.data[i]
-        b = circ.data[i + 1]
+        a = circ.data[i]  # Current instruction
+        b = circ.data[i + 1]  # Next instruction
 
-        same_qubits = a.qubits == b.qubits
-        same_clbits = a.clbits == b.clbits
-        same_name = a.operation.name == b.operation.name
+        same_qubits = a.qubits == b.qubits  # True when both instructions act on the same qubits
+        same_clbits = a.clbits == b.clbits  # True when both instructions use the same classical bits
+        same_name = a.operation.name == b.operation.name  # True when both operations have the same gate name
 
         if same_name and same_qubits and same_clbits and a.operation.name in SELF_INVERSE_GATES:
             add_finding(
                 findings,
-                "R5",
+                "R5",  # Rule ID for LLM-generated or anomalous circuit structures
                 "Redundant gates",
-                "medium",
+                "medium",  # Medium severity because redundant gates can affect efficiency and reliability
                 "Adjacent self-inverse gates cancel logically",
                 {
-                    "confidentiality": False,
-                    "integrity": True,
-                    "availability": True,
+                    "confidentiality": False,  # Redundant gates do not directly leak information
+                    "integrity": True,  # Redundant logic may indicate unintended circuit behavior
+                    "availability": True,  # Extra gates increase execution cost and noise exposure
                 },
                 evidence={
-                    "first_index": i,
-                    "second_index": i + 1,
-                    "operation": a.operation.name,
+                    "first_index": i,  # Index of the first redundant gate
+                    "second_index": i + 1,  # Index of the adjacent matching gate
+                    "operation": a.operation.name,  # Name of the canceling self-inverse operation
                 },
             )
 
-    return findings
+    return findings  # Return all detected redundant-gate findings
 
 
 def rule_dead_or_ineffective_patterns(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect repeated gate patterns that may indicate ineffective or anomalous circuit logic."""
+
+    findings: List[Finding] = []  # Stores dead-code or ineffective-pattern findings
 
     for i in range(len(circ.data) - 3):
-        ops = circ.data[i:i + 4]
-        names = [x.operation.name for x in ops]
-        qubits = [tuple(circ.find_bit(q).index for q in x.qubits) for x in ops]
+        ops = circ.data[i:i + 4]  # Look at a sliding window of four consecutive instructions
+        names = [x.operation.name for x in ops]  # Extract operation names from the window
+        qubits = [
+            tuple(circ.find_bit(q).index for q in x.qubits) for x in ops
+        ]  # Convert each instruction's qubits into integer-index tuples
 
         if names == ["cx", "cx", "cx", "cx"] and len(set(qubits)) <= 2:
             add_finding(
                 findings,
-                "R5",
+                "R5",  # Rule ID for anomalous or low-value generated circuit patterns
                 "Oscillating gate pattern",
-                "medium",
+                "medium",  # Medium severity because repeated toggling may indicate incorrect or inefficient logic
                 "Repeated two-qubit toggling pattern suggests low-value or anomalous logic",
                 {
-                    "confidentiality": False,
-                    "integrity": True,
-                    "availability": True,
+                    "confidentiality": False,  # Pattern does not directly leak information
+                    "integrity": True,  # Oscillating logic may change or obscure the intended computation
+                    "availability": True,  # Extra two-qubit gates increase execution cost and noise exposure
                 },
-                evidence={"start_index": i, "pattern": names, "qubits": qubits},
+                evidence={
+                    "start_index": i,  # Starting index of the detected pattern
+                    "pattern": names,  # Operation-name pattern that triggered the finding
+                    "qubits": qubits,  # Qubit pairs involved in the pattern
+                },
             )
 
-    return findings
+    return findings  # Return all detected ineffective-pattern findings
 
 
 def rule_register_conflict(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
-    clbit_last_write: Dict[int, int] = {}
+    """Detect multiple measurements writing into the same classical bit."""
+
+    findings: List[Finding] = []  # Stores classical-register overwrite findings
+    clbit_last_write: Dict[int, int] = {}  # Maps classical bit index to the last measurement instruction that wrote to it
 
     for i, instr in enumerate(circ.data):
         if instr.operation.name != "measure":
-            continue
+            continue  # Only measurement instructions write classical results
 
         for clb in instr.clbits:
-            cidx = circ.find_bit(clb).index
+            cidx = circ.find_bit(clb).index  # Convert Qiskit classical bit object into its integer index
+
             if cidx in clbit_last_write:
                 add_finding(
                     findings,
-                    "R5",
+                    "R5",  # Rule ID for anomalous or suspicious circuit structure
                     "Classical register overwrite",
-                    "medium",
+                    "medium",  # Medium severity because overwritten measurements may corrupt result interpretation
                     "Multiple measurements write to the same classical bit",
                     {
-                        "confidentiality": False,
-                        "integrity": True,
-                        "availability": False,
+                        "confidentiality": False,  # Overwrite does not directly expose private state
+                        "integrity": True,  # Later measurement overwrites earlier result data
+                        "availability": False,  # This does not directly affect circuit availability
                     },
                     evidence={
-                        "clbit": cidx,
-                        "previous_measure_index": clbit_last_write[cidx],
-                        "current_measure_index": i,
+                        "clbit": cidx,  # Classical bit being overwritten
+                        "previous_measure_index": clbit_last_write[cidx],  # Earlier measurement writing to this bit
+                        "current_measure_index": i,  # Current measurement overwriting this bit
                     },
                 )
-            clbit_last_write[cidx] = i
 
-    return findings
+            clbit_last_write[cidx] = i  # Record this measurement as the latest write to the classical bit
+
+    return findings  # Return all detected classical-register overwrite findings
 
 
 def rule_over_entangle(circ: QuantumCircuit) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect dense two-qubit connectivity that may indicate excessive entanglement."""
 
-    twoq_pairs: List[Tuple[int, ...]] = []
+    findings: List[Finding] = []  # Stores over-entanglement findings
+
+    twoq_pairs: List[Tuple[int, ...]] = []  # Stores pairs of qubits involved in two-qubit operations
+
     for instr in circ.data:
         if instr.operation.num_qubits == 2:
-            pair = tuple(sorted(circ.find_bit(q).index for q in instr.qubits))
-            twoq_pairs.append(pair)
+            pair = tuple(
+                sorted(circ.find_bit(q).index for q in instr.qubits)
+            )  # Normalize the qubit pair so order does not create duplicate pair identities
+            twoq_pairs.append(pair)  # Track the two-qubit interaction
 
     if circ.num_qubits >= 4 and len(twoq_pairs) >= max(4, circ.num_qubits + 1):
-        unique_pairs = len(set(twoq_pairs))
+        unique_pairs = len(set(twoq_pairs))  # Count distinct two-qubit interaction pairs
+
         if unique_pairs >= circ.num_qubits:
             add_finding(
                 findings,
-                "R5",
+                "R5",  # Rule ID for anomalous or excessive generated circuit structure
                 "Over-entanglement pattern",
-                "medium",
+                "medium",  # Medium severity because dense entanglement can increase noise sensitivity and complexity
                 "Dense two-qubit connectivity may indicate anomalous or excessive entanglement",
                 {
-                    "confidentiality": False,
-                    "integrity": True,
-                    "availability": True,
+                    "confidentiality": False,  # Dense entanglement does not directly imply information leakage here
+                    "integrity": True,  # Excessive entanglement may alter intended computation
+                    "availability": True,  # Many two-qubit gates may reduce executability on noisy devices
                 },
                 evidence={
-                    "num_qubits": circ.num_qubits,
-                    "two_qubit_ops": len(twoq_pairs),
-                    "unique_pairs": unique_pairs,
+                    "num_qubits": circ.num_qubits,  # Total number of qubits in the circuit
+                    "two_qubit_ops": len(twoq_pairs),  # Total number of two-qubit operations
+                    "unique_pairs": unique_pairs,  # Number of unique interacting qubit pairs
                 },
             )
 
-    return findings
+    return findings  # Return all detected over-entanglement findings
 
 
 def rule_fake_api_pattern(source_code: str, tree: Optional[ast.AST]) -> List[Finding]:
-    findings: List[Finding] = []
+    """Detect suspicious, hallucinated, or non-standard API usage in Python circuit source code."""
+
+    findings: List[Finding] = []  # Stores suspicious API findings
+
     if not source_code:
-        return findings
+        return findings  # Return no findings when no source code is available
 
     suspicious_tokens = [
-        ".run_circuit(",
-        ".simulate_counts(",
-        ".apply_noise_profile(",
-        ".fake_backend(",
-        ".quantum_execute(",
+        ".run_circuit(",  # Non-standard or suspicious circuit execution method
+        ".simulate_counts(",  # Non-standard or suspicious simulation helper
+        ".apply_noise_profile(",  # Non-standard or suspicious noise API
+        ".fake_backend(",  # Suspicious fake-backend helper pattern
+        ".quantum_execute(",  # Suspicious execution method name
     ]
 
     for token in suspicious_tokens:
         if token in source_code:
             add_finding(
                 findings,
-                "R5",
+                "R5",  # Rule ID for suspicious generated-code patterns
                 "Suspicious API pattern",
-                "medium",
+                "medium",  # Medium severity because hallucinated APIs may fail or behave unexpectedly
                 "Potential hallucinated or non-standard API pattern detected",
                 {
-                    "confidentiality": False,
-                    "integrity": True,
-                    "availability": True,
+                    "confidentiality": False,  # Suspicious API usage does not directly imply confidentiality impact
+                    "integrity": True,  # Non-standard APIs may alter or invalidate execution behavior
+                    "availability": True,  # Invalid APIs may prevent execution
                 },
-                layer="hybrid",
-                evidence={"token": token},
+                layer="hybrid",  # Applies to the Python/Qiskit hybrid layer
+                evidence={"token": token},  # Store the exact suspicious token
             )
 
     if tree is not None:
@@ -858,46 +980,60 @@ def rule_fake_api_pattern(source_code: str, tree: Optional[ast.AST]) -> List[Fin
             "append", "compose", "copy",
             "draw", "depth", "size", "count_ops",
             "if_test",
-        }
+        }  # Known acceptable QuantumCircuit methods for this static-analysis heuristic
 
         class MethodVisitor(ast.NodeVisitor):
+            """AST visitor that collects suspicious method calls."""
+
             def __init__(self) -> None:
-                self.bad_calls: List[Tuple[int, str]] = []
+                self.bad_calls: List[Tuple[int, str]] = []  # Stores suspicious calls as (line number, method name)
 
             def visit_Call(self, node: ast.Call) -> None:
+                """Inspect function and method calls in the AST."""
+
                 if isinstance(node.func, ast.Attribute):
-                    name = node.func.attr
+                    name = node.func.attr  # Method name being called
+
                     if name.startswith("fake_") or name.startswith("unsafe_"):
-                        self.bad_calls.append((node.lineno, name))
+                        self.bad_calls.append(
+                            (node.lineno, name)
+                        )  # Flag explicitly suspicious method-name prefixes
+
                     elif (
                         isinstance(node.func.value, ast.Name)
                         and node.func.value.id == "qc"
                         and name not in qiskit_method_allowlist
                     ):
                         if name not in {"c_if"}:
-                            self.bad_calls.append((node.lineno, name))
-                self.generic_visit(node)
+                            self.bad_calls.append(
+                                (node.lineno, name)
+                            )  # Flag non-allowlisted qc method calls, except known conditional helper
 
-        visitor = MethodVisitor()
-        visitor.visit(tree)
+                self.generic_visit(node)  # Continue visiting nested AST nodes
+
+        visitor = MethodVisitor()  # Create the AST visitor
+        visitor.visit(tree)  # Walk the parsed source-code tree
 
         for lineno, name in visitor.bad_calls:
             add_finding(
                 findings,
-                "R5",
+                "R5",  # Rule ID for suspicious generated-code patterns
                 "Suspicious method call",
-                "medium",
+                "medium",  # Medium severity because unknown circuit methods may be hallucinated or version-sensitive
                 "Potential hallucinated or version-sensitive circuit method detected",
                 {
-                    "confidentiality": False,
-                    "integrity": True,
-                    "availability": True,
+                    "confidentiality": False,  # Suspicious method call does not directly imply confidentiality impact
+                    "integrity": True,  # Unknown methods may affect circuit correctness
+                    "availability": True,  # Unknown methods may fail at runtime
                 },
-                layer="hybrid",
-                evidence={"line": lineno, "method": name},
+                layer="hybrid",  # Applies to source-code/API usage
+                evidence={
+                    "line": lineno,  # Source-code line number of the suspicious call
+                    "method": name,  # Suspicious method name
+                },
             )
 
-    return findings
+    return findings  # Return all detected suspicious API findings
 
 
 # =========================
@@ -905,83 +1041,111 @@ def rule_fake_api_pattern(source_code: str, tree: Optional[ast.AST]) -> List[Fin
 # =========================
 
 def build_noise(level: Optional[str]) -> Optional[NoiseModel]:
+    """Build a simple depolarizing and readout noise model for simulation."""
+
     if level in (None, "none"):
-        return None
+        return None  # No noise model is applied when noise is disabled or unspecified
 
     if level not in {"light", "heavy"}:
-        raise ValueError(f"Unsupported noise model: {level!r}")
+        raise ValueError(f"Unsupported noise model: {level!r}")  # Reject unsupported noise-profile names
 
-    nm = NoiseModel()
-    p = 0.01 if level == "light" else 0.05
+    nm = NoiseModel()  # Create an empty Qiskit Aer noise model
+    p = 0.01 if level == "light" else 0.05  # Use a lower error rate for light noise and higher rate for heavy noise
 
-    nm.add_all_qubit_quantum_error(depolarizing_error(p, 1), ["x", "sx", "rz"])
-    nm.add_all_qubit_quantum_error(depolarizing_error(p * 2, 2), ["cx"])
-    nm.add_all_qubit_readout_error(ReadoutError([[0.98, 0.02], [0.02, 0.98]]))
-    return nm
+    nm.add_all_qubit_quantum_error(
+        depolarizing_error(p, 1),
+        ["x", "sx", "rz"],
+    )  # Apply single-qubit depolarizing error to common one-qubit gates
+
+    nm.add_all_qubit_quantum_error(
+        depolarizing_error(p * 2, 2),
+        ["cx"],
+    )  # Apply stronger depolarizing error to two-qubit CX gates
+
+    nm.add_all_qubit_readout_error(
+        ReadoutError([[0.98, 0.02], [0.02, 0.98]])
+    )  # Add symmetric 2% readout error for measuring 0 as 1 or 1 as 0
+
+    return nm  # Return the configured noise model
 
 
 def ensure_measurements(circ: QuantumCircuit) -> QuantumCircuit:
-    has_measurement = any(instr.operation.name == "measure" for instr in circ.data)
-    out = circ.copy()
+    """Return a measured copy of the circuit, adding measurements if none exist."""
+
+    has_measurement = any(
+        instr.operation.name == "measure" for instr in circ.data
+    )  # Check whether the circuit already contains measurement operations
+
+    out = circ.copy()  # Work on a copy so the original circuit is not modified
+
     if not has_measurement:
-        out.measure_all()
-    return out
+        out.measure_all()  # Add measurements to all qubits when the circuit has no measurements
+
+    return out  # Return the circuit copy with measurements ensured
+
 
 def run_validation(tx: Optional[QuantumCircuit], ctx: ExecutionContext) -> RuntimeValidation:
+    """Compare ideal and noisy simulation results for a transpiled circuit."""
+
     if tx is None:
         return RuntimeValidation(
-            tvd=None,
-            hellinger=None,
-            fidelity=None,
-            status="skipped",
-            error="Validation skipped because transpilation failed",
+            tvd=None,  # Total variation distance is unavailable
+            hellinger=None,  # Hellinger distance is unavailable
+            fidelity=None,  # Fidelity is unavailable
+            status="skipped",  # Validation did not run
+            error="Validation skipped because transpilation failed",  # Reason validation was skipped
         )
 
     try:
-        tx_meas = ensure_measurements(tx)
+        tx_meas = ensure_measurements(tx)  # Ensure the circuit can produce measurement counts
 
-        ideal_sim = AerSimulator(seed_simulator=RANDOM_SEED)
+        ideal_sim = AerSimulator(seed_simulator=RANDOM_SEED)  # Create deterministic ideal simulator
         ideal_counts = ideal_sim.run(
             tx_meas,
             shots=SHOTS,
             seed_simulator=RANDOM_SEED,
-        ).result().get_counts()
+        ).result().get_counts()  # Run ideal simulation and collect counts
 
-        noise_model = build_noise(ctx.noise_model)
+        noise_model = build_noise(ctx.noise_model)  # Build the requested noise model, if any
         noisy_sim = AerSimulator(
             noise_model=noise_model,
             seed_simulator=RANDOM_SEED,
-        )
+        )  # Create deterministic noisy simulator
+
         noisy_counts = noisy_sim.run(
             tx_meas,
             shots=SHOTS,
             seed_simulator=RANDOM_SEED,
-        ).result().get_counts()
+        ).result().get_counts()  # Run noisy simulation and collect counts
 
-        p = normalize_counts(ideal_counts)
-        q = normalize_counts(noisy_counts)
-        p, q = align_distributions(p, q)
+        p = normalize_counts(ideal_counts)  # Convert ideal counts to probabilities
+        q = normalize_counts(noisy_counts)  # Convert noisy counts to probabilities
+        p, q = align_distributions(p, q)  # Align outcome keys before comparing distributions
 
-        tvd = 0.5 * sum(abs(p[k] - q[k]) for k in p)
+        tvd = 0.5 * sum(
+            abs(p[k] - q[k]) for k in p
+        )  # Total variation distance between ideal and noisy distributions
+
         hell = math.sqrt(
             sum((math.sqrt(p[k]) - math.sqrt(q[k])) ** 2 for k in p)
-        ) / math.sqrt(2)
-        fid = distribution_fidelity(p, q)
+        ) / math.sqrt(2)  # Hellinger distance between ideal and noisy distributions
+
+        fid = distribution_fidelity(p, q)  # Classical distribution fidelity
 
         return RuntimeValidation(
-            tvd=tvd,
-            hellinger=hell,
-            fidelity=fid,
-            status="ok",
+            tvd=tvd,  # Store total variation distance
+            hellinger=hell,  # Store Hellinger distance
+            fidelity=fid,  # Store fidelity
+            status="ok",  # Validation completed successfully
         )
 
     except Exception as e:
         return RuntimeValidation(
-            tvd=None,
-            hellinger=None,
-            fidelity=None,
-            status="error",
-            error=str(e),
+            tvd=None,  # Total variation distance could not be calculated
+            hellinger=None,  # Hellinger distance could not be calculated
+            fidelity=None,  # Fidelity could not be calculated
+            status="error",  # Validation failed
+            error=str(e),  # Preserve the validation error message
         )
 
 
@@ -990,199 +1154,232 @@ def run_validation(tx: Optional[QuantumCircuit], ctx: ExecutionContext) -> Runti
 # =========================
 
 def analyze(path: str, args) -> AnalysisReport:
-    findings: List[Finding] = []
-    errors: List[str] = []
+    """Run full static, compilation, and runtime validation analysis for a circuit file."""
 
-    source_code = safe_read_text(path) if path.endswith(".py") else ""
-    tree = safe_ast_parse(source_code)
+    findings: List[Finding] = []  # Stores all findings collected during analysis
+    errors: List[str] = []  # Stores non-fatal errors encountered during analysis
+
+    source_code = safe_read_text(path) if path.endswith(".py") else ""  # Read source only for Python circuit files
+    tree = safe_ast_parse(source_code)  # Parse Python source into an AST for static API-pattern checks
 
     ctx = ExecutionContext(
-        backend=args.fake_backend,
+        backend=args.fake_backend,  # Backend name or fake backend identifier provided by CLI arguments
         basis_gates=(
             [g.strip() for g in args.basis_gates.split(",") if g.strip()]
             if args.basis_gates
             else ["rz", "sx", "x", "cx"]
-        ),
-        coupling_map=parse_coupling(args.coupling_map),
-        optimization_level=args.optimization_level,
-        noise_model=args.noise_model,
+        ),  # Use provided basis gates, or default to a common Qiskit basis
+        coupling_map=parse_coupling(args.coupling_map),  # Parse optional coupling map string into qubit pairs
+        optimization_level=args.optimization_level,  # Transpiler optimization level
+        noise_model=args.noise_model,  # Requested noise model for runtime validation
     )
 
     try:
-        circ, loaded_source = load_circuit(path)
-        if loaded_source:
-            source_code = loaded_source
-            tree = safe_ast_parse(source_code)
-    except Exception as e:
-        errors.append(str(e))
-        dummy = QuantumCircuit(1, 1)
+        circ, loaded_source = load_circuit(path)  # Load the circuit from a .py or .qasm file
 
-        initial_findings = rule_sdk_fragility(source_code) + rule_fake_api_pattern(source_code, tree)
-        initial_findings = aggregate_findings(initial_findings)
-        attach_vulnerability_semantics(initial_findings)
-        attach_mitigations(initial_findings)
-        mitigation_summary = build_mitigation_summary(initial_findings)
+        if loaded_source:
+            source_code = loaded_source  # Replace initial source with loaded Python source when available
+            tree = safe_ast_parse(source_code)  # Rebuild AST from the loaded source
+
+    except Exception as e:
+        errors.append(str(e))  # Preserve circuit-loading failure message
+        dummy = QuantumCircuit(1, 1)  # Create a minimal placeholder circuit for report metrics
+
+        initial_findings = rule_sdk_fragility(source_code) + rule_fake_api_pattern(
+            source_code,
+            tree,
+        )  # Still analyze source-level SDK/API issues even if the circuit cannot be loaded
+
+        initial_findings = aggregate_findings(initial_findings)  # Merge duplicate source-level findings
+        attach_vulnerability_semantics(initial_findings)  # Add vulnerability labels and risk descriptions
+        attach_mitigations(initial_findings)  # Add mitigation recommendations
+        mitigation_summary = build_mitigation_summary(initial_findings)  # Build grouped mitigation summary
 
         return AnalysisReport(
-            execution_context=ctx,
-            findings=initial_findings,
-            source_metrics=metrics(dummy),
-            transpiled_metrics=None,
+            execution_context=ctx,  # Include requested execution context even though loading failed
+            findings=initial_findings,  # Include any source-level findings found before load failure
+            source_metrics=metrics(dummy),  # Use dummy metrics because the real circuit is unavailable
+            transpiled_metrics=None,  # No transpiled metrics because loading failed
             runtime_validation=RuntimeValidation(
-                tvd=None,
-                hellinger=None,
-                fidelity=None,
-                status="skipped",
+                tvd=None,  # Runtime metric unavailable
+                hellinger=None,  # Runtime metric unavailable
+                fidelity=None,  # Runtime metric unavailable
+                status="skipped",  # Validation skipped because no circuit was loaded
                 error="Circuit could not be loaded",
             ),
             cia_summary={
-                "confidentiality": any(f.impact.get("confidentiality", False) for f in initial_findings),
-                "integrity": any(f.impact.get("integrity", False) for f in initial_findings),
-                "availability": True,
+                "confidentiality": any(
+                    f.impact.get("confidentiality", False) for f in initial_findings
+                ),  # Summarize confidentiality impact from available findings
+                "integrity": any(
+                    f.impact.get("integrity", False) for f in initial_findings
+                ),  # Summarize integrity impact from available findings
+                "availability": True,  # Loading failure impacts availability of the analysis/execution path
             },
-            mitigation_summary=mitigation_summary,
-            status="error",
-            errors=errors,
+            mitigation_summary=mitigation_summary,  # Include prioritized mitigation recommendations
+            status="error",  # Overall report status is error because circuit loading failed
+            errors=errors,  # Include collected load errors
         )
 
-    findings += rule_measurement_misuse(circ)
-    findings += rule_classical_feedback(circ)
-    findings += rule_qubit_reuse(circ)
-    findings += rule_redundant_gates(circ)
-    findings += rule_dead_or_ineffective_patterns(circ)
-    findings += rule_register_conflict(circ)
-    findings += rule_over_entangle(circ)
-    findings += rule_sdk_fragility(source_code)
-    findings += rule_fake_api_pattern(source_code, tree)
+    findings += rule_measurement_misuse(circ)  # Detect operations after measurement without reset
+    findings += rule_classical_feedback(circ)  # Detect conditional operations requiring feedback review
+    findings += rule_qubit_reuse(circ)  # Detect measured qubits reused without reset
+    findings += rule_redundant_gates(circ)  # Detect adjacent self-inverse gates that cancel
+    findings += rule_dead_or_ineffective_patterns(circ)  # Detect repeated low-value gate patterns
+    findings += rule_register_conflict(circ)  # Detect repeated measurement writes to the same classical bit
+    findings += rule_over_entangle(circ)  # Detect dense or excessive two-qubit interaction patterns
+    findings += rule_sdk_fragility(source_code)  # Detect deprecated or fragile SDK usage
+    findings += rule_fake_api_pattern(source_code, tree)  # Detect suspicious or hallucinated API patterns
 
-    tx: Optional[QuantumCircuit] = None
+    tx: Optional[QuantumCircuit] = None  # Holds the transpiled circuit if transpilation succeeds
+
     try:
         tx = transpile(
             circ,
-            basis_gates=ctx.basis_gates,
-            coupling_map=ctx.coupling_map,
-            optimization_level=ctx.optimization_level,
-            seed_transpiler=RANDOM_SEED,
+            basis_gates=ctx.basis_gates,  # Target basis gates for transpilation
+            coupling_map=ctx.coupling_map,  # Optional hardware connectivity constraints
+            optimization_level=ctx.optimization_level,  # Requested optimization level
+            seed_transpiler=RANDOM_SEED,  # Fixed seed for reproducible transpilation
         )
-        findings += rule_swap_exposure(circ, tx, ctx)
+
+        findings += rule_swap_exposure(circ, tx, ctx)  # Detect SWAP/depth/size growth after transpilation
+
     except Exception as e:
-        errors.append(f"Transpile failed: {e}")
+        errors.append(f"Transpile failed: {e}")  # Preserve transpilation failure message
+
         add_finding(
             findings,
-            "R3",
+            "R3",  # Compilation-layer rule ID
             "Compilation failure",
-            "high",
+            "high",  # High severity because the circuit cannot be compiled for the requested context
             "Circuit could not be transpiled under the provided execution context",
             {
-                "confidentiality": False,
-                "integrity": True,
-                "availability": True,
+                "confidentiality": False,  # Failure does not directly leak information
+                "integrity": True,  # Failed compilation prevents assurance that intended logic is preserved
+                "availability": True,  # Failed compilation directly affects executability
             },
-            layer="compilation",
+            layer="compilation",  # Finding applies to the compilation layer
             evidence={
-                "basis_gates": ctx.basis_gates,
-                "coupling_map": ctx.coupling_map,
-                "optimization_level": ctx.optimization_level,
-                "error": str(e),
+                "basis_gates": ctx.basis_gates,  # Basis gates used during failed transpilation
+                "coupling_map": ctx.coupling_map,  # Coupling map used during failed transpilation
+                "optimization_level": ctx.optimization_level,  # Optimization level used during failed transpilation
+                "error": str(e),  # Raw transpiler error
             },
         )
 
-    validation = run_validation(tx, ctx)
+    validation = run_validation(tx, ctx)  # Compare ideal and noisy runtime behavior when possible
 
     if validation.status == "ok" and validation.tvd is not None and validation.tvd > 0.1:
         add_finding(
             findings,
-            "RV1",
+            "RV1",  # Runtime-validation rule for noisy divergence
             "Noise-induced divergence",
-            "medium",
+            "medium",  # Medium severity because divergence may affect trust in execution results
             "Execution context alters output distribution",
             {
-                "confidentiality": False,
-                "integrity": True,
-                "availability": True,
+                "confidentiality": False,  # Divergence does not directly imply information leakage
+                "integrity": True,  # Output distribution changed under noise
+                "availability": True,  # Noise sensitivity may reduce reliable execution
             },
-            layer="hardware",
+            layer="hardware",  # Finding applies to hardware/runtime behavior
             evidence={
-                "tvd": validation.tvd,
-                "hellinger": validation.hellinger,
-                "fidelity": validation.fidelity,
+                "tvd": validation.tvd,  # Total variation distance between ideal and noisy distributions
+                "hellinger": validation.hellinger,  # Hellinger distance between distributions
+                "fidelity": validation.fidelity,  # Distribution fidelity
             },
-        )
-    elif validation.status == "error":
-        errors.append(f"Validation failed: {validation.error}")
-        add_finding(
-            findings,
-            "RV0",
-            "Validation execution issue",
-            "low",
-            "Runtime validation could not be completed",
-            {
-                "confidentiality": False,
-                "integrity": False,
-                "availability": True,
-            },
-            layer="hardware",
-            evidence={"error": validation.error},
         )
 
-    findings = aggregate_findings(findings)
-    attach_vulnerability_semantics(findings)
-    attach_mitigations(findings)
-    mitigation_summary = build_mitigation_summary(findings)
+    elif validation.status == "error":
+        errors.append(f"Validation failed: {validation.error}")  # Preserve runtime-validation error message
+
+        add_finding(
+            findings,
+            "RV0",  # Runtime-validation execution issue rule
+            "Validation execution issue",
+            "low",  # Low severity because this indicates uncertainty rather than confirmed circuit flaw
+            "Runtime validation could not be completed",
+            {
+                "confidentiality": False,  # Validation failure does not directly imply information leakage
+                "integrity": False,  # Integrity issue is not confirmed because validation did not complete
+                "availability": True,  # Validation pipeline availability is affected
+            },
+            layer="hardware",  # Finding applies to runtime/hardware validation
+            evidence={"error": validation.error},  # Include validation error for debugging
+        )
+
+    findings = aggregate_findings(findings)  # Merge duplicate findings and consolidate evidence
+    attach_vulnerability_semantics(findings)  # Add vulnerability classifications to each finding
+    attach_mitigations(findings)  # Attach mitigation steps and priorities
+    mitigation_summary = build_mitigation_summary(findings)  # Build de-duplicated mitigation summary by priority
 
     cia_summary = {
         "confidentiality": False,
         "integrity": False,
         "availability": False,
-    }
+    }  # Initialize overall CIA impact summary
+
     for f in findings:
         for k in cia_summary:
             if f.impact.get(k, False):
-                cia_summary[k] = True
+                cia_summary[k] = True  # Mark CIA category as impacted if any finding impacts it
 
     return AnalysisReport(
-        execution_context=ctx,
-        findings=findings,
-        source_metrics=metrics(circ),
-        transpiled_metrics=metrics(tx) if tx is not None else None,
-        runtime_validation=validation,
-        cia_summary=cia_summary,
-        mitigation_summary=mitigation_summary,
-        status="ok" if not errors else "partial",
-        errors=errors,
+        execution_context=ctx,  # Final execution context used for analysis
+        findings=findings,  # Final aggregated and enriched findings
+        source_metrics=metrics(circ),  # Metrics for the original loaded circuit
+        transpiled_metrics=metrics(tx) if tx is not None else None,  # Metrics for transpiled circuit, if available
+        runtime_validation=validation,  # Runtime validation result
+        cia_summary=cia_summary,  # Overall CIA impact summary
+        mitigation_summary=mitigation_summary,  # Grouped mitigation recommendations
+        status="ok" if not errors else "partial",  # Partial when analysis completed with recoverable errors
+        errors=errors,  # Collected non-fatal errors
     )
-
 
 # =========================
 # CLI
 # =========================
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--basis-gates")
-    parser.add_argument("--coupling-map")
-    parser.add_argument("--optimization-level", type=int, default=1)
-    parser.add_argument("--fake-backend")
-    parser.add_argument("--noise-model", default="light", choices=["none", "light", "heavy"])
+    """Parse command-line arguments, run analysis, print results, and save the report."""
 
-    args = parser.parse_args()
+    parser = argparse.ArgumentParser()  # Create the command-line argument parser
 
-    report = analyze(args.input, args)
-    report_json = report.to_json()
+    parser.add_argument("--input", required=True)  # Required path to the input .py or .qasm circuit file
+    parser.add_argument("--basis-gates")  # Optional comma-separated list of target basis gates
+    parser.add_argument("--coupling-map")  # Optional coupling map string, such as "0-1,1-2"
+    parser.add_argument(
+        "--optimization-level",
+        type=int,
+        default=1,
+    )  # Qiskit transpiler optimization level, defaulting to 1
 
-    print(report_json)
+    parser.add_argument("--fake-backend")  # Optional backend label stored in the execution context
+    parser.add_argument(
+        "--noise-model",
+        default="light",
+        choices=["none", "light", "heavy"],
+    )  # Noise profile used during runtime validation
 
-    os.makedirs("reports", exist_ok=True)
+    args = parser.parse_args()  # Parse CLI arguments from the command line
 
-    circuit_name = os.path.splitext(os.path.basename(args.input))[0]
-    output_path = f"reports/{circuit_name}.json"
+    report = analyze(args.input, args)  # Run the full circuit analysis pipeline
+    report_json = report.to_json()  # Serialize the analysis report to formatted JSON
+
+    print(report_json)  # Print the report JSON to stdout
+
+    os.makedirs("reports", exist_ok=True)  # Create the reports directory if it does not already exist
+
+    circuit_name = os.path.splitext(
+        os.path.basename(args.input)
+    )[0]  # Extract the input filename without its extension
+
+    output_path = f"reports/{circuit_name}.json"  # Build the report output path
 
     with open(output_path, "w", encoding="utf-8") as fh:
-        fh.write(report_json)
+        fh.write(report_json)  # Save the JSON report to disk
 
-    print(f"\n[OK] Report saved to {output_path}")
+    print(f"\n[OK] Report saved to {output_path}")  # Confirm where the report was saved
 
 
 if __name__ == "__main__":
-    main()
+    main()  # Run the CLI entry point when this file is executed directly
