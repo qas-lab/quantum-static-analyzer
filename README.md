@@ -197,6 +197,8 @@ Example:
 
 After `results_table.csv` has been generated, you can print the aggregate structural and runtime metrics with:
 
+**Note:**Rule counts and coverage percentages are computed over all 101 circuits. Runtime and transpilation means are computed over the 94 circuits with valid execution metrics because 7 analyses failed.
+
 We used a fixed transpiler seed (`42`), a fixed simulator seed (`42`), and `4096` shots to improve reproducibility and reduce sampling variance during simulation.
 
 
