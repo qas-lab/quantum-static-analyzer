@@ -252,7 +252,7 @@ The tool supports safer development and evaluation of quantum programs by identi
 
 The evaluation corpus contains 101 circuits:
 - 30 benchmark circuits from QASMBench
-- 71 LLM-generated Qiskit circuits created using GPT-4 and Claude Opus 4.5
+- 71 LLM-generated Qiskit circuits created using GPT-4.0 and Claude Opus 4.5
 - of the 71 LLM-generated circuits, 47 were issue-seeking and 24 were clean control cases, based on a manual design-intent review
 
 ## Acknowledgements
