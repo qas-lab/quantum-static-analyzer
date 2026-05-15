@@ -258,7 +258,7 @@ The evaluation corpus contains 101 circuits:
 ## Acknowledgements
 
 
-Parts of this project were developed with the assistance of large language models, specifically GPT-4 and Claude Opus 4.5. These models were used to support code generation, refinement, and implementation, including the creation of 71 LLM-generated quantum circuits used in the evaluation. They also assisted with improving and debugging the static analyzer, writing rules for vulnerability detection, formatting the security report after circuit execution, and ensuring that the static analyzer produced consistent output across repeated runs. Final implementation decisions, testing, validation, and analysis were reviewed and completed by the project authors.
+Parts of this project were developed with the assistance of large language models, specifically GPT-4.0 and Claude Opus 4.5. These models were used to support code generation, refinement, and implementation, including the creation of 71 LLM-generated quantum circuits used in the evaluation. They also assisted with improving and debugging the static analyzer, writing rules for vulnerability detection, formatting the security report after circuit execution, and ensuring that the static analyzer produced consistent output across repeated runs. Final implementation decisions, testing, validation, and analysis were reviewed and completed by the project authors.
 
 
 Some QASM benchmark circuits used in this work were obtained from the Qiskit Benchpress repository:
